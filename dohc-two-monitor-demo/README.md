@@ -1,66 +1,63 @@
-# LR-193 Rerun dual-screen demo
+# LR-193 native Rerun delivery
 
-This directory holds the Rerun-native rebuild for the DOHC two-screen demo.
+This delivery uses the Rerun viewer as the primary display surface.
+It does not ship or start the previous `delta_layout_entry_server.py` HTML wrapper.
 
-## Generate artifacts
+## Artifacts
 
-```bash
-pixi run uv run --with rerun-sdk --with h5py --with numpy \
-  python dohc-two-monitor-demo/generate_lr193_rerun.py \
-  /Users/w/default.h5 \
-  --icon dohc-two-monitor-demo/assets/delta-icon.png \
-  --out dohc-two-monitor-demo/out
-```
+- `out/default_lr193.rrd` is the generated Rerun recording.
+- `out/layouts/screen1.rbl` opens the two-camera screen.
+- `out/layouts/screen2.rbl` opens the telemetry and DOHE DECK screen.
+- `assets/icon.png` is the user-provided logo source.
 
-Outputs:
+The only Rerun viewer branding change in this checkout is the top-left menu logo replacement in `crates/viewer/re_viewer/src/ui/rerun_menu.rs`.
+The logo asset is embedded from `crates/viewer/re_ui/data/icons/delta_logo.png`.
 
-- `out/default_lr193.rrd`
-- `out/layouts/screen1.rbl`
-- `out/layouts/screen2.rbl`
-- `out/static/cam0.jpg`
-- `out/static/cam1.jpg`
-- `out/static/delta-icon.png`
-- `out/static/t265.jpg`
-- `out/static/telemetry.json`
-- `out/lr193_dual_screen_summary.json`
+## Native viewer commands
 
-## Layout contract
-
-- Screen 1: two large Rerun `Spatial2DView` camera panes, `Cam0` left and `Cam1` right.
-- Screen 2: left third is three stacked Rerun `TimeSeriesView` charts, center third is only the Delta logo as a Rerun image view, right third is a T265 image view.
-- The Rerun time panel is hidden in both saved layouts.
-- The center Delta view and browser chrome use the transparent `delta-icon.png` asset on a light background, not the original corner-badge icon, and do not add a title/subtitle/card/shadow/border around the mark.
-
-The angular velocity chart is derived from finite differences of the H5 pose Euler angles because the source pose payload does not include angular velocity directly.
-
-## Serve two entries
-
-Run the Rerun backend:
+Open screen 1:
 
 ```bash
-pixi run uv run --with rerun-sdk rerun \
-  --bind 0.0.0.0 \
-  --web-viewer-port 9090 \
+target/debug/rerun \
+  --bind 127.0.0.1 \
+  --web-viewer-port 9101 \
   --port 9876 \
   --serve-web \
-  dohc-two-monitor-demo/out/default_lr193.rrd
+  --renderer webgl \
+  dohc-two-monitor-demo/out/default_lr193.rrd \
+  dohc-two-monitor-demo/out/layouts/screen1.rbl
 ```
 
-Run the two-entry wrapper:
+Open screen 2:
 
 ```bash
-python3 dohc-two-monitor-demo/delta_layout_entry_server.py \
-  --bind 0.0.0.0 \
-  --ports 9101,9102 \
-  --asset-base-url http://127.0.0.1:9090
+target/debug/rerun \
+  --bind 127.0.0.1 \
+  --web-viewer-port 9102 \
+  --port 9877 \
+  --serve-web \
+  --renderer webgl \
+  dohc-two-monitor-demo/out/default_lr193.rrd \
+  dohc-two-monitor-demo/out/layouts/screen2.rbl
 ```
 
-Open:
+The local URLs are:
 
-- Screen 1: `http://HOST:9101/?renderer=webgl`
-- Screen 2: `http://HOST:9102/?renderer=webgl`
+- `http://127.0.0.1:9101?url=rerun%2Bhttp%3A%2F%2F127.0.0.1%3A9876%2Fproxy&renderer=webgl`
+- `http://127.0.0.1:9102?url=rerun%2Bhttp%3A%2F%2F127.0.0.1%3A9877%2Fproxy&renderer=webgl`
 
-The entry wrapper defaults to a static display mode for low kiosk CPU usage.
-The static mode serves pre-generated images and charts from the same H5-derived recording inputs so the browser does not keep a WebGL render loop running.
-Append `&live=1` when interactive Rerun navigation is needed.
-Use `&freeze=0` as a compatibility alias for the same live mode.
+Using an unpatched `rerun-sdk` binary will open the same Rerun data, but it will not contain the logo replacement.
+
+## Convenience launcher
+
+```bash
+python3 dohc-two-monitor-demo/run_native_rerun_viewers.py
+```
+
+Set `RERUN_BIN=/path/to/rerun` to use a locally built viewer.
+Use `--dry-run` to print the exact commands without starting processes.
+
+## Deprecated URLs
+
+The old deployed wrapper URLs on `9101/9102` served a custom static HTML display.
+They are not part of this native Rerun delivery and should be considered disabled or stale.

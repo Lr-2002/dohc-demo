@@ -1,6 +1,0 @@
-__pycache__/
-*.pyc
-*.log
-.playwright-cli/
-output/
-test-results/
