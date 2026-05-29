@@ -280,66 +280,101 @@ def log_recording(data: FakeBackendData, icon_path: Path, out_dir: Path, seed: i
     }
 
 
-def make_screen1_blueprint(path: Path) -> None:
+def frame_time_range(frame_count: int):
     import rerun.blueprint as rrb
 
+    return rrb.VisibleTimeRange(
+        "frame",
+        start=rrb.TimeRangeBoundary.absolute(seq=0),
+        end=rrb.TimeRangeBoundary.absolute(seq=frame_count - 1),
+    )
+
+
+def frame_time_axis(frame_count: int):
+    import rerun.blueprint as rrb
+
+    return rrb.TimeAxis(
+        view_range=rrb.TimeRange(
+            start=rrb.TimeRangeBoundary.absolute(seq=0),
+            end=rrb.TimeRangeBoundary.absolute(seq=frame_count - 1),
+        ),
+        zoom_lock=True,
+    )
+
+
+def make_screen1_blueprint(path: Path, frame_count: int) -> None:
+    import rerun.blueprint as rrb
+
+    time_range = frame_time_range(frame_count)
     rrb.Blueprint(
         rrb.Horizontal(
-            rrb.Spatial2DView(name="Cam0", origin="/screen1/cam0", background=[8, 10, 12]),
-            rrb.Spatial2DView(name="Cam1", origin="/screen1/cam1", background=[8, 10, 12]),
+            rrb.Spatial2DView(name="Cam0", origin="/screen1/cam0", background=[8, 10, 12], time_ranges=time_range),
+            rrb.Spatial2DView(name="Cam1", origin="/screen1/cam1", background=[8, 10, 12], time_ranges=time_range),
             column_shares=[1, 1],
         ),
-        rrb.TimePanel(state="hidden"),
+        rrb.TimePanel(state="hidden", timeline="frame", play_state="paused", fps=30.0),
         rrb.SelectionPanel(state="collapsed"),
         rrb.BlueprintPanel(state="collapsed"),
         collapse_panels=True,
     ).save(APP_ID, path)
 
 
-def make_screen2_blueprint(path: Path) -> None:
+def make_screen2_blueprint(path: Path, frame_count: int) -> None:
     import rerun.blueprint as rrb
 
+    time_range = frame_time_range(frame_count)
+    time_axis = frame_time_axis(frame_count)
     rrb.Blueprint(
         rrb.Horizontal(
             rrb.Vertical(
                 rrb.TimeSeriesView(
                     name="Velocity XYZ",
                     origin="/screen2/charts/velocity_xyz",
+                    time_ranges=time_range,
+                    axis_x=time_axis,
                     plot_legend=rrb.PlotLegend(visible=True),
                     axis_y=rrb.ScalarAxis(range=(-0.65, 0.65)),
                 ),
                 rrb.TimeSeriesView(
                     name="Angular velocity XYZ",
                     origin="/screen2/charts/angular_velocity_xyz",
+                    time_ranges=time_range,
+                    axis_x=time_axis,
                     plot_legend=rrb.PlotLegend(visible=True),
                     axis_y=rrb.ScalarAxis(range=(-0.08, 0.08)),
                 ),
                 rrb.TimeSeriesView(
                     name="Position XY",
                     origin="/screen2/charts/position_xy",
+                    time_ranges=time_range,
+                    axis_x=time_axis,
                     plot_legend=rrb.PlotLegend(visible=True),
                     axis_y=rrb.ScalarAxis(range=(-2.5, 2.5)),
                 ),
                 row_shares=[1, 1, 1],
             ),
-            rrb.Spatial2DView(name="DOHE DECK", origin="/screen2/deck_indicator", background=[8, 10, 12]),
-            rrb.Spatial2DView(name="", origin="/screen2/delta_logo", background=[244, 244, 240]),
+            rrb.Spatial2DView(
+                name="DOHE DECK", origin="/screen2/deck_indicator", background=[8, 10, 12], time_ranges=time_range
+            ),
+            rrb.Spatial2DView(
+                name="", origin="/screen2/delta_logo", background=[244, 244, 240], time_ranges=time_range
+            ),
             column_shares=[1.2, 1, 0.8],
         ),
-        rrb.TimePanel(state="hidden"),
+        rrb.TimePanel(state="hidden", timeline="frame", play_state="paused", fps=30.0),
         rrb.SelectionPanel(state="collapsed"),
         rrb.BlueprintPanel(state="collapsed"),
         collapse_panels=True,
     ).save(APP_ID, path)
 
 
-def write_blueprints(out_dir: Path) -> dict[str, str]:
+def write_blueprints(out_dir: Path, frame_count: int) -> dict[str, str]:
     layouts = out_dir / "layouts"
     layouts.mkdir(parents=True, exist_ok=True)
     screen1 = layouts / SCREEN1_LAYOUT
     screen2 = layouts / SCREEN2_LAYOUT
-    make_screen1_blueprint(screen1)
-    make_screen2_blueprint(screen2)
+    make_screen1_blueprint(screen1, frame_count)
+    make_screen2_blueprint(screen2, frame_count)
     return {
         "screen1_layout": str(screen1),
         "screen2_layout": str(screen2),
@@ -372,7 +407,7 @@ def main() -> None:
 
     data = generate_backend_data(args.frame_count, args.fps)
     recording = log_recording(data, args.icon, args.out, args.seed)
-    blueprints = write_blueprints(args.out)
+    blueprints = write_blueprints(args.out, args.frame_count)
 
     summary = {
         "contract": "LR-193-fake-backend-v1",
