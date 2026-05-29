@@ -308,8 +308,20 @@ def make_screen1_blueprint(path: Path, frame_count: int) -> None:
     time_range = frame_time_range(frame_count)
     rrb.Blueprint(
         rrb.Horizontal(
-            rrb.Spatial2DView(name="Cam0", origin="/screen1/cam0", background=[8, 10, 12], time_ranges=time_range),
-            rrb.Spatial2DView(name="Cam1", origin="/screen1/cam1", background=[8, 10, 12], time_ranges=time_range),
+            rrb.Spatial2DView(
+                name="Cam0",
+                origin="/screen1/cam0",
+                contents=["/screen1/cam0"],
+                background=[8, 10, 12],
+                time_ranges=time_range,
+            ),
+            rrb.Spatial2DView(
+                name="Cam1",
+                origin="/screen1/cam1",
+                contents=["/screen1/cam1"],
+                background=[8, 10, 12],
+                time_ranges=time_range,
+            ),
             column_shares=[1, 1],
         ),
         rrb.TimePanel(state="hidden", timeline="frame", play_state="paused", fps=30.0),
@@ -330,6 +342,7 @@ def make_screen2_blueprint(path: Path, frame_count: int) -> None:
                 rrb.TimeSeriesView(
                     name="Velocity XYZ",
                     origin="/screen2/charts/velocity_xyz",
+                    contents=["/screen2/charts/velocity_xyz"],
                     time_ranges=time_range,
                     axis_x=time_axis,
                     plot_legend=rrb.PlotLegend(visible=True),
@@ -338,6 +351,7 @@ def make_screen2_blueprint(path: Path, frame_count: int) -> None:
                 rrb.TimeSeriesView(
                     name="Angular velocity XYZ",
                     origin="/screen2/charts/angular_velocity_xyz",
+                    contents=["/screen2/charts/angular_velocity_xyz"],
                     time_ranges=time_range,
                     axis_x=time_axis,
                     plot_legend=rrb.PlotLegend(visible=True),
@@ -346,6 +360,7 @@ def make_screen2_blueprint(path: Path, frame_count: int) -> None:
                 rrb.TimeSeriesView(
                     name="Position XY",
                     origin="/screen2/charts/position_xy",
+                    contents=["/screen2/charts/position_xy"],
                     time_ranges=time_range,
                     axis_x=time_axis,
                     plot_legend=rrb.PlotLegend(visible=True),
@@ -354,10 +369,18 @@ def make_screen2_blueprint(path: Path, frame_count: int) -> None:
                 row_shares=[1, 1, 1],
             ),
             rrb.Spatial2DView(
-                name="DOHE DECK", origin="/screen2/deck_indicator", background=[8, 10, 12], time_ranges=time_range
+                name="DOHE DECK",
+                origin="/screen2/deck_indicator",
+                contents=["/screen2/deck_indicator"],
+                background=[8, 10, 12],
+                time_ranges=time_range,
             ),
             rrb.Spatial2DView(
-                name="", origin="/screen2/delta_logo", background=[244, 244, 240], time_ranges=time_range
+                name="",
+                origin="/screen2/delta_logo",
+                contents=["/screen2/delta_logo"],
+                background=[244, 244, 240],
+                time_ranges=time_range,
             ),
             column_shares=[1.2, 1, 0.8],
         ),
