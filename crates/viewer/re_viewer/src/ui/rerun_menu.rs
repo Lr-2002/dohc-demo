@@ -2,12 +2,12 @@
 
 use std::fmt::Write as _;
 
-use egui::ScrollArea;
 #[cfg(debug_assertions)]
 use egui::containers::menu;
 use egui::containers::menu::{MenuButton, MenuConfig};
+use egui::ScrollArea;
 use re_ui::menu::menu_style;
-use re_ui::{UICommand, UICommandSender as _, UiExt as _, icons};
+use re_ui::{icons, UICommand, UICommandSender as _, UiExt as _};
 use re_viewer_context::ActiveStoreContext;
 
 use crate::App;
@@ -22,10 +22,9 @@ impl App {
         ui: &mut egui::Ui,
     ) {
         let icon_tint = ui.tokens().strong_fg_color;
-        let image = re_ui::icons::RERUN_WORDMARK
+        let image = re_ui::icons::DELTA_LOGO
             .as_image()
-            .max_height(12.0)
-            .tint(icon_tint)
+            .max_height(20.0)
             .alt_text("Menu");
 
         MenuButton::new((image, icons::DROPDOWN_ARROW.as_image().tint(icon_tint)))

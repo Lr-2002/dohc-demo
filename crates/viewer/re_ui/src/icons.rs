@@ -122,6 +122,9 @@ pub const RERUN_WORDMARK: Icon = icon_from_path!("../data/icons/rerun_wordmark.s
 /// The square and colorful `RE`
 pub const RERUN_LOGO: Icon = icon_from_path!("../data/icons/rerun_logo.png");
 
+/// DOHC demo replacement for the top-left viewer logo.
+pub const DELTA_LOGO: Icon = icon_from_path!("../data/icons/delta_logo.png");
+
 pub const HELP: Icon = icon_from_path!("../data/icons/help.svg");
 
 pub const PLAY: Icon = icon_from_path!("../data/icons/play.svg");
