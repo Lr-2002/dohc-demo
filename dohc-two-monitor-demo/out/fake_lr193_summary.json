@@ -1,0 +1,45 @@
+{
+  "contract": "LR-193-fake-backend-v1",
+  "app_id": "dohc_lr193_rerun_dual_screen",
+  "seed": 193,
+  "fps": 30.0,
+  "recording": {
+    "recording": "dohc-two-monitor-demo/out/default_lr193.rrd",
+    "recording_id": "lr193_fake_backend_v1",
+    "representative_frame": 180,
+    "frame_count": 360,
+    "entities": [
+      "/screen1/cam0",
+      "/screen1/cam1",
+      "/screen2/charts/velocity_xyz",
+      "/screen2/charts/angular_velocity_xyz",
+      "/screen2/charts/position_xy",
+      "/screen2/deck_indicator",
+      "/screen2/delta_logo",
+      "/screen2/t265"
+    ]
+  },
+  "blueprints": {
+    "screen1_layout": "dohc-two-monitor-demo/out/layouts/screen1.rbl",
+    "screen2_layout": "dohc-two-monitor-demo/out/layouts/screen2.rbl"
+  },
+  "real_data_input_boundary": {
+    "keep_entity_paths": [
+      "/screen1/cam0",
+      "/screen1/cam1",
+      "/screen2/charts/velocity_xyz",
+      "/screen2/charts/angular_velocity_xyz",
+      "/screen2/charts/position_xy",
+      "/screen2/deck_indicator",
+      "/screen2/delta_logo",
+      "/screen2/t265"
+    ],
+    "replace_with_real_inputs": [
+      "cam0 and cam1 encoded image bytes or RGB arrays",
+      "deck status image or state sequence for /screen2/deck_indicator",
+      "pose samples containing frame, position_xyz, velocity_xyz, and euler_rpy",
+      "optional T265 image bytes for /screen2/t265"
+    ],
+    "layout_contract": "The two .rbl files depend on the entity paths above, not on wrapper HTML."
+  }
+}
