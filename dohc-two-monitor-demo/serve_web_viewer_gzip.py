@@ -6,11 +6,14 @@ from __future__ import annotations
 import argparse
 import http.server
 import os
+import posixpath
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 
 class GzipStaticHandler(http.server.SimpleHTTPRequestHandler):
+    asset_roots: dict[str, Path] = {}
+
     extensions_map = {
         **http.server.SimpleHTTPRequestHandler.extensions_map,
         ".js": "text/javascript",
@@ -44,9 +47,29 @@ class GzipStaticHandler(http.server.SimpleHTTPRequestHandler):
         return file_handle
 
     def translate_path(self, path: str) -> str:
-        path = urlsplit(path).path
-        path = unquote(path)
-        return super().translate_path(path)
+        request_path = unquote(urlsplit(path).path)
+        for prefix, root in self.asset_roots.items():
+            if request_path == prefix or request_path.startswith(prefix + "/"):
+                relative = posixpath.normpath(request_path.removeprefix(prefix).lstrip("/"))
+                if relative in ("", "."):
+                    return str(root)
+                if relative == ".." or relative.startswith("../"):
+                    return str(root / "__forbidden__")
+                return str(root / relative)
+        return super().translate_path(request_path)
+
+
+def parse_asset_root(value: str) -> tuple[str, Path]:
+    try:
+        prefix, directory = value.split("=", 1)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("--asset-root must be URL_PREFIX=DIR") from exc
+    if not prefix.startswith("/"):
+        raise argparse.ArgumentTypeError("asset root URL_PREFIX must start with /")
+    path = Path(directory)
+    if not path.is_dir():
+        raise argparse.ArgumentTypeError(f"asset root directory does not exist: {path}")
+    return prefix.rstrip("/"), path.resolve()
 
 
 def parse_args() -> argparse.Namespace:
@@ -54,12 +77,24 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--bind", default="0.0.0.0")
     parser.add_argument("--port", type=int, required=True)
     parser.add_argument("--directory", type=Path, required=True)
+    parser.add_argument(
+        "--asset-root",
+        action="append",
+        default=[],
+        type=parse_asset_root,
+        help="Serve an extra directory at URL_PREFIX, for example /lr193=dohc-two-monitor-demo/out",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    handler = lambda *handler_args, **handler_kwargs: GzipStaticHandler(
+    handler_class = type(
+        "ConfiguredGzipStaticHandler",
+        (GzipStaticHandler,),
+        {"asset_roots": dict(args.asset_root)},
+    )
+    handler = lambda *handler_args, **handler_kwargs: handler_class(
         *handler_args,
         directory=str(args.directory),
         **handler_kwargs,

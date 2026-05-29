@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import io
 import json
 import math
 from dataclasses import dataclass
@@ -36,17 +35,6 @@ class FakeBackendData:
 def text_size(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.ImageFont) -> tuple[int, int]:
     left, top, right, bottom = draw.textbbox((0, 0), text, font=font)
     return right - left, bottom - top
-
-
-def encode_image(image: Image.Image, media_type: str = "image/jpeg") -> bytes:
-    buffer = io.BytesIO()
-    if media_type == "image/jpeg":
-        image.convert("RGB").save(buffer, format="JPEG", quality=88, optimize=True)
-    elif media_type == "image/png":
-        image.save(buffer, format="PNG", optimize=True)
-    else:
-        raise ValueError(f"unsupported media type: {media_type}")
-    return buffer.getvalue()
 
 
 def draw_label(draw: ImageDraw.ImageDraw, xy: tuple[int, int], text: str, fill: tuple[int, int, int]) -> None:
@@ -180,75 +168,35 @@ def log_recording(data: FakeBackendData, icon_path: Path, out_dir: Path, seed: i
     representative_frame = int(data.frames[len(data.frames) // 2])
     final_frame = int(data.frames[-1])
 
+    def rgb_image(image: Image.Image):
+        return rr.Image(np.asarray(image.convert("RGB"))).compress(jpeg_quality=88)
+
+    chart_series = {
+        "/screen2/charts/velocity_xyz/vx": ("vx", [85, 190, 255], (-0.65, 0.65)),
+        "/screen2/charts/velocity_xyz/vy": ("vy", [76, 214, 141], (-0.65, 0.65)),
+        "/screen2/charts/velocity_xyz/vz": ("vz", [255, 204, 92], (-0.65, 0.65)),
+        "/screen2/charts/angular_velocity_xyz/wx": ("wx", [85, 190, 255], (-0.08, 0.08)),
+        "/screen2/charts/angular_velocity_xyz/wy": ("wy", [76, 214, 141], (-0.08, 0.08)),
+        "/screen2/charts/angular_velocity_xyz/wz": ("wz", [255, 204, 92], (-0.08, 0.08)),
+        "/screen2/charts/position_xy/x": ("x", [85, 190, 255], (-2.5, 2.5)),
+        "/screen2/charts/position_xy/y": ("y", [76, 214, 141], (-2.5, 2.5)),
+    }
+
     with rr.RecordingStream(APP_ID, recording_id=RECORDING_ID) as rec:
         rec.save(recording_path)
-        rec.log(
-            "/screen1/cam0",
-            rr.EncodedImage(
-                contents=encode_image(camera_image("cam0", representative_frame, seed)),
-                media_type="image/jpeg",
-            ),
-            static=True,
-        )
-        rec.log(
-            "/screen1/cam1",
-            rr.EncodedImage(
-                contents=encode_image(camera_image("cam1", representative_frame, seed)),
-                media_type="image/jpeg",
-            ),
-            static=True,
-        )
-        rec.log(
-            "/screen2/t265",
-            rr.EncodedImage(contents=encode_image(t265_image(representative_frame)), media_type="image/jpeg"),
-            static=True,
-        )
-        rec.log(
-            "/screen2/delta_logo",
-            rr.EncodedImage(path=icon_path, media_type="image/png", magnification_filter="linear"),
-            static=True,
-        )
+        for frame in (0, representative_frame, final_frame):
+            rec.set_time("frame", sequence=frame)
+            rec.log("/screen1/cam0", rgb_image(camera_image("cam0", frame, seed)))
+            rec.log("/screen1/cam1", rgb_image(camera_image("cam1", frame, seed)))
+            rec.log("/screen2/t265", rgb_image(t265_image(frame)))
+            rec.log("/screen2/deck_indicator", rgb_image(deck_indicator("ready" if frame else "check", frame)))
 
-        rec.set_time("frame", sequence=int(data.frames[0]))
-        rec.log(
-            "/screen2/deck_indicator",
-            rr.EncodedImage(
-                contents=encode_image(deck_indicator("check", int(data.frames[0]))), media_type="image/jpeg"
-            ),
-        )
-        rec.set_time("frame", sequence=final_frame)
-        rec.log(
-            "/screen2/deck_indicator",
-            rr.EncodedImage(contents=encode_image(deck_indicator("ready", final_frame)), media_type="image/jpeg"),
-        )
+        rec.set_time("frame", sequence=0)
+        logo = Image.open(icon_path)
+        rec.log("/screen2/delta_logo", rr.Image(np.asarray(logo.convert("RGBA"))))
 
-        rec.log(
-            "/screen2/charts/velocity_xyz",
-            rr.SeriesLines(
-                names=["vx", "vy", "vz"],
-                colors=[[85, 190, 255], [76, 214, 141], [255, 204, 92]],
-                widths=[2.0, 2.0, 2.0],
-            ),
-            static=True,
-        )
-        rec.log(
-            "/screen2/charts/angular_velocity_xyz",
-            rr.SeriesLines(
-                names=["wx", "wy", "wz"],
-                colors=[[85, 190, 255], [76, 214, 141], [255, 204, 92]],
-                widths=[2.0, 2.0, 2.0],
-            ),
-            static=True,
-        )
-        rec.log(
-            "/screen2/charts/position_xy",
-            rr.SeriesLines(
-                names=["x", "y"],
-                colors=[[85, 190, 255], [76, 214, 141]],
-                widths=[2.0, 2.0],
-            ),
-            static=True,
-        )
+        for path, (name, color, _) in chart_series.items():
+            rec.log(path, rr.SeriesLines(names=name, colors=color, widths=2.0), static=True)
 
         for frame, velocity, angular, position in zip(
             data.frames,
@@ -258,9 +206,12 @@ def log_recording(data: FakeBackendData, icon_path: Path, out_dir: Path, seed: i
             strict=True,
         ):
             rec.set_time("frame", sequence=int(frame))
-            rec.log("/screen2/charts/velocity_xyz", rr.Scalars(velocity.tolist()))
-            rec.log("/screen2/charts/angular_velocity_xyz", rr.Scalars(angular.tolist()))
-            rec.log("/screen2/charts/position_xy", rr.Scalars(position[:2].tolist()))
+            for axis, value in zip(["vx", "vy", "vz"], velocity, strict=True):
+                rec.log(f"/screen2/charts/velocity_xyz/{axis}", rr.Scalars(float(value)))
+            for axis, value in zip(["wx", "wy", "wz"], angular, strict=True):
+                rec.log(f"/screen2/charts/angular_velocity_xyz/{axis}", rr.Scalars(float(value)))
+            for axis, value in zip(["x", "y"], position[:2], strict=True):
+                rec.log(f"/screen2/charts/position_xy/{axis}", rr.Scalars(float(value)))
 
     return {
         "recording": str(recording_path),
@@ -270,9 +221,14 @@ def log_recording(data: FakeBackendData, icon_path: Path, out_dir: Path, seed: i
         "entities": [
             "/screen1/cam0",
             "/screen1/cam1",
-            "/screen2/charts/velocity_xyz",
-            "/screen2/charts/angular_velocity_xyz",
-            "/screen2/charts/position_xy",
+            "/screen2/charts/velocity_xyz/vx",
+            "/screen2/charts/velocity_xyz/vy",
+            "/screen2/charts/velocity_xyz/vz",
+            "/screen2/charts/angular_velocity_xyz/wx",
+            "/screen2/charts/angular_velocity_xyz/wy",
+            "/screen2/charts/angular_velocity_xyz/wz",
+            "/screen2/charts/position_xy/x",
+            "/screen2/charts/position_xy/y",
             "/screen2/deck_indicator",
             "/screen2/delta_logo",
             "/screen2/t265",
@@ -306,6 +262,7 @@ def make_screen1_blueprint(path: Path, frame_count: int) -> None:
     import rerun.blueprint as rrb
 
     time_range = frame_time_range(frame_count)
+    camera_bounds = rrb.VisualBounds2D(x_range=[0, 1280], y_range=[0, 720])
     rrb.Blueprint(
         rrb.Horizontal(
             rrb.Spatial2DView(
@@ -313,6 +270,7 @@ def make_screen1_blueprint(path: Path, frame_count: int) -> None:
                 origin="/screen1/cam0",
                 contents=["/screen1/cam0"],
                 background=[8, 10, 12],
+                visual_bounds=camera_bounds,
                 time_ranges=time_range,
             ),
             rrb.Spatial2DView(
@@ -320,6 +278,7 @@ def make_screen1_blueprint(path: Path, frame_count: int) -> None:
                 origin="/screen1/cam1",
                 contents=["/screen1/cam1"],
                 background=[8, 10, 12],
+                visual_bounds=camera_bounds,
                 time_ranges=time_range,
             ),
             column_shares=[1, 1],
@@ -336,13 +295,14 @@ def make_screen2_blueprint(path: Path, frame_count: int) -> None:
 
     time_range = frame_time_range(frame_count)
     time_axis = frame_time_axis(frame_count)
+    image_bounds = rrb.VisualBounds2D(x_range=[0, 900], y_range=[0, 720])
+    logo_bounds = rrb.VisualBounds2D(x_range=[0, 512], y_range=[0, 512])
     rrb.Blueprint(
         rrb.Horizontal(
             rrb.Vertical(
                 rrb.TimeSeriesView(
                     name="Velocity XYZ",
                     origin="/screen2/charts/velocity_xyz",
-                    contents=["/screen2/charts/velocity_xyz"],
                     time_ranges=time_range,
                     axis_x=time_axis,
                     plot_legend=rrb.PlotLegend(visible=True),
@@ -351,7 +311,6 @@ def make_screen2_blueprint(path: Path, frame_count: int) -> None:
                 rrb.TimeSeriesView(
                     name="Angular velocity XYZ",
                     origin="/screen2/charts/angular_velocity_xyz",
-                    contents=["/screen2/charts/angular_velocity_xyz"],
                     time_ranges=time_range,
                     axis_x=time_axis,
                     plot_legend=rrb.PlotLegend(visible=True),
@@ -360,7 +319,6 @@ def make_screen2_blueprint(path: Path, frame_count: int) -> None:
                 rrb.TimeSeriesView(
                     name="Position XY",
                     origin="/screen2/charts/position_xy",
-                    contents=["/screen2/charts/position_xy"],
                     time_ranges=time_range,
                     axis_x=time_axis,
                     plot_legend=rrb.PlotLegend(visible=True),
@@ -373,6 +331,7 @@ def make_screen2_blueprint(path: Path, frame_count: int) -> None:
                 origin="/screen2/deck_indicator",
                 contents=["/screen2/deck_indicator"],
                 background=[8, 10, 12],
+                visual_bounds=image_bounds,
                 time_ranges=time_range,
             ),
             rrb.Spatial2DView(
@@ -380,6 +339,7 @@ def make_screen2_blueprint(path: Path, frame_count: int) -> None:
                 origin="/screen2/delta_logo",
                 contents=["/screen2/delta_logo"],
                 background=[244, 244, 240],
+                visual_bounds=logo_bounds,
                 time_ranges=time_range,
             ),
             column_shares=[1.2, 1, 0.8],

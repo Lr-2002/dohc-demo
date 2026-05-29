@@ -16,36 +16,21 @@ The logo asset is embedded from `crates/viewer/re_ui/data/icons/delta_logo.png`.
 
 ## Native viewer commands
 
-Open screen 1:
+Serve the patched Rerun web viewer bundle with the generated Rerun artifacts exposed under `/lr193`:
 
 ```bash
-target/debug/rerun \
-  --bind 127.0.0.1 \
-  --web-viewer-port 9101 \
-  --port 9876 \
-  --serve-web \
-  --renderer webgl \
-  dohc-two-monitor-demo/out/default_lr193.rrd \
-  dohc-two-monitor-demo/out/layouts/screen1.rbl
+python3 dohc-two-monitor-demo/serve_web_viewer_gzip.py \
+  --directory web_viewer \
+  --asset-root /lr193=dohc-two-monitor-demo/out \
+  --port 9101
 ```
 
-Open screen 2:
-
-```bash
-target/debug/rerun \
-  --bind 127.0.0.1 \
-  --web-viewer-port 9102 \
-  --port 9877 \
-  --serve-web \
-  --renderer webgl \
-  dohc-two-monitor-demo/out/default_lr193.rrd \
-  dohc-two-monitor-demo/out/layouts/screen2.rbl
-```
+Use the same command with `--port 9102` for the second screen.
 
 The local URLs are:
 
-- `http://127.0.0.1:9101?url=rerun%2Bhttp%3A%2F%2F127.0.0.1%3A9876%2Fproxy&renderer=webgl`
-- `http://127.0.0.1:9102?url=rerun%2Bhttp%3A%2F%2F127.0.0.1%3A9877%2Fproxy&renderer=webgl`
+- `http://127.0.0.1:9101?url=http%3A%2F%2F127.0.0.1%3A9101%2Flr193%2Fdefault_lr193.rrd&url=http%3A%2F%2F127.0.0.1%3A9101%2Flr193%2Flayouts%2Fscreen1.rbl&renderer=webgl`
+- `http://127.0.0.1:9102?url=http%3A%2F%2F127.0.0.1%3A9102%2Flr193%2Fdefault_lr193.rrd&url=http%3A%2F%2F127.0.0.1%3A9102%2Flr193%2Flayouts%2Fscreen2.rbl&renderer=webgl`
 
 Using an unpatched `rerun-sdk` binary will open the same Rerun data, but it will not contain the logo replacement.
 
@@ -62,9 +47,14 @@ The generator writes the stable entity paths consumed by the two `.rbl` layouts:
 
 - `/screen1/cam0`
 - `/screen1/cam1`
-- `/screen2/charts/velocity_xyz`
-- `/screen2/charts/angular_velocity_xyz`
-- `/screen2/charts/position_xy`
+- `/screen2/charts/velocity_xyz/vx`
+- `/screen2/charts/velocity_xyz/vy`
+- `/screen2/charts/velocity_xyz/vz`
+- `/screen2/charts/angular_velocity_xyz/wx`
+- `/screen2/charts/angular_velocity_xyz/wy`
+- `/screen2/charts/angular_velocity_xyz/wz`
+- `/screen2/charts/position_xy/x`
+- `/screen2/charts/position_xy/y`
 - `/screen2/deck_indicator`
 - `/screen2/delta_logo`
 - `/screen2/t265`
@@ -78,7 +68,10 @@ The native viewer assets can be served with precompressed WASM support:
 
 ```bash
 gzip -kf -9 web_viewer/re_viewer_bg.wasm
-python3 dohc-two-monitor-demo/serve_web_viewer_gzip.py --directory web_viewer --port 9101
+python3 dohc-two-monitor-demo/serve_web_viewer_gzip.py \
+  --directory web_viewer \
+  --asset-root /lr193=dohc-two-monitor-demo/out \
+  --port 9101
 ```
 
 Use the same command with `--port 9102` for the second screen.
@@ -90,7 +83,7 @@ This is still the Rerun web viewer bundle, not a wrapper UI.
 python3 dohc-two-monitor-demo/run_native_rerun_viewers.py
 ```
 
-Set `RERUN_BIN=/path/to/rerun` to use a locally built viewer.
+Set `PYTHON=/path/to/python` to choose the Python interpreter.
 Use `--dry-run` to print the exact commands without starting processes.
 
 ## Deprecated URLs
