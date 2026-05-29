@@ -72,6 +72,18 @@ The generator writes the stable entity paths consumed by the two `.rbl` layouts:
 When real data arrives, replace the fake image and pose inputs inside `generate_fake_lr193_rerun.py` while preserving those entity paths and the two layout files.
 The native Rerun viewer deployment does not require a wrapper change for that swap.
 
+## Remote asset serving
+
+The native viewer assets can be served with precompressed WASM support:
+
+```bash
+gzip -kf -9 web_viewer/re_viewer_bg.wasm
+python3 dohc-two-monitor-demo/serve_web_viewer_gzip.py --directory web_viewer --port 9101
+```
+
+Use the same command with `--port 9102` for the second screen.
+This is still the Rerun web viewer bundle, not a wrapper UI.
+
 ## Convenience launcher
 
 ```bash
