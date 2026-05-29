@@ -10,7 +10,6 @@ import sys
 from pathlib import Path
 from urllib.parse import quote
 
-
 ROOT = Path(__file__).resolve().parent
 RECORDING = ROOT / "out" / "default_lr193.rrd"
 SCREEN1_BLUEPRINT = ROOT / "out" / "layouts" / "screen1.rbl"
@@ -93,14 +92,8 @@ def main() -> None:
     for command in commands:
         print(" ".join(command))
 
-    print(
-        "Screen 1: "
-        + viewer_url(args.url_host, args.screen1_port, args.grpc_port_base, args.renderer)
-    )
-    print(
-        "Screen 2: "
-        + viewer_url(args.url_host, args.screen2_port, args.grpc_port_base + 1, args.renderer)
-    )
+    print("Screen 1: " + viewer_url(args.url_host, args.screen1_port, args.grpc_port_base, args.renderer))
+    print("Screen 2: " + viewer_url(args.url_host, args.screen2_port, args.grpc_port_base + 1, args.renderer))
 
     if args.dry_run:
         return
