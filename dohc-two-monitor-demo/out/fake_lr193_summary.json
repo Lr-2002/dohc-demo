@@ -8,6 +8,18 @@
     "recording_id": "lr193_fake_backend_v1",
     "representative_frame": 180,
     "frame_count": 360,
+    "logo_video": {
+      "source": "dohc-two-monitor-demo/assets/08e875350fba3add6ecebe0de7d26021.mp4",
+      "rendering": "MP4 decoded at generation time into a Rerun Image sequence on /screen2/delta_logo starting from a visible source-frame offset",
+      "source_frame_count": 278,
+      "source_frame_offset": 80,
+      "looped_by_frame_index": true,
+      "compatibility_reason": "The current deployed web-viewer browser path lacks WebCodecs VideoDecoder, so native AssetVideo does not render there."
+    },
+    "position_xy": {
+      "trajectory_alpha_floor": 0.2,
+      "trajectory_fade_window_frames": 120
+    },
     "entities": [
       "/screen1/cam0",
       "/screen1/cam1",
@@ -17,6 +29,8 @@
       "/screen2/charts/angular_velocity_xyz/wx",
       "/screen2/charts/angular_velocity_xyz/wy",
       "/screen2/charts/angular_velocity_xyz/wz",
+      "/screen2/position_xy/grid",
+      "/screen2/position_xy/axes",
       "/screen2/position_xy/trajectory",
       "/screen2/position_xy/origin",
       "/screen2/position_xy/current",
@@ -39,6 +53,8 @@
       "/screen2/charts/angular_velocity_xyz/wx",
       "/screen2/charts/angular_velocity_xyz/wy",
       "/screen2/charts/angular_velocity_xyz/wz",
+      "/screen2/position_xy/grid",
+      "/screen2/position_xy/axes",
       "/screen2/position_xy/trajectory",
       "/screen2/position_xy/origin",
       "/screen2/position_xy/current",
@@ -49,8 +65,9 @@
     "replace_with_real_inputs": [
       "cam0 and cam1 encoded image bytes or RGB arrays",
       "deck status image or state sequence for /screen2/deck_indicator",
+      "logo MP4 path or bytes decoded into the /screen2/delta_logo image sequence",
       "pose samples containing frame, position_xyz or position_xy, velocity_xyz, and euler_rpy",
-      "XY pose samples drive /screen2/position_xy/trajectory and /screen2/position_xy/current",
+      "XY pose samples drive the faded /screen2/position_xy/trajectory and /screen2/position_xy/current",
       "optional T265 image bytes for /screen2/t265"
     ],
     "layout_contract": "The two .rbl files depend on the entity paths above, not on wrapper HTML."

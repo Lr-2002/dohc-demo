@@ -18,9 +18,18 @@ RECORDING_ID = "lr193_fake_backend_v1"
 RECORDING = "default_lr193.rrd"
 SCREEN1_LAYOUT = "screen1.rbl"
 SCREEN2_LAYOUT = "screen2.rbl"
-DEFAULT_ICON = Path("dohc-two-monitor-demo/assets/icon.png")
+DEFAULT_LOGO_VIDEO = Path("dohc-two-monitor-demo/assets/08e875350fba3add6ecebe0de7d26021.mp4")
 DEFAULT_OUT = Path("dohc-two-monitor-demo/out")
 DEFAULT_SUMMARY = DEFAULT_OUT / "fake_lr193_summary.json"
+LIGHT_BACKGROUND = [255, 255, 255]
+TELEMETRY_BLUE = [85, 190, 255]
+TELEMETRY_GREEN = [76, 214, 141]
+TELEMETRY_YELLOW = [255, 204, 92]
+POSITION_TRAJECTORY_ALPHA_FLOOR = 0.2
+POSITION_TRAJECTORY_FADE_WINDOW_FRAMES = 120
+LOGO_VIDEO_WIDTH = 752
+LOGO_VIDEO_HEIGHT = 1280
+LOGO_VIDEO_FRAME_OFFSET = 80
 
 
 @dataclass(frozen=True)
@@ -35,6 +44,10 @@ class FakeBackendData:
 def text_size(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.ImageFont) -> tuple[int, int]:
     left, top, right, bottom = draw.textbbox((0, 0), text, font=font)
     return right - left, bottom - top
+
+
+def rgba(color: list[int], alpha: int) -> list[int]:
+    return [color[0], color[1], color[2], alpha]
 
 
 def draw_label(draw: ImageDraw.ImageDraw, xy: tuple[int, int], text: str, fill: tuple[int, int, int]) -> None:
@@ -160,7 +173,54 @@ def t265_image(frame: int, width: int = 960, height: int = 720) -> Image.Image:
     return image
 
 
-def log_recording(data: FakeBackendData, icon_path: Path, out_dir: Path, seed: int) -> dict[str, Any]:
+def position_xy_grid_lines(x_range: list[float], y_range: list[float]) -> list[list[list[float]]]:
+    verticals = [[[float(x), y_range[0]], [float(x), y_range[1]]] for x in np.linspace(x_range[0], x_range[1], 7)]
+    horizontals = [[[x_range[0], float(y)], [x_range[1], float(y)]] for y in np.linspace(y_range[0], y_range[1], 7)]
+    return verticals + horizontals
+
+
+def position_xy_faded_segments(
+    position_xy: np.ndarray, current_index: int
+) -> tuple[list[list[list[float]]], list[list[int]]]:
+    segment_count = min(current_index, len(position_xy) - 1)
+    if segment_count <= 0:
+        return [], []
+
+    strips: list[list[list[float]]] = []
+    colors: list[list[int]] = []
+    for segment_index in range(segment_count):
+        strips.append([
+            position_xy[segment_index].astype(float).tolist(),
+            position_xy[segment_index + 1].astype(float).tolist(),
+        ])
+        age = segment_count - 1 - segment_index
+        alpha_fraction = max(
+            POSITION_TRAJECTORY_ALPHA_FLOOR,
+            1.0 - (age / POSITION_TRAJECTORY_FADE_WINDOW_FRAMES),
+        )
+        colors.append(rgba(TELEMETRY_BLUE, round(alpha_fraction * 255)))
+
+    return strips, colors
+
+
+def logo_video_frames(logo_video_path: Path, rr: Any) -> list[Any]:
+    import av
+
+    images = []
+    with av.open(str(logo_video_path)) as container:
+        video_stream = container.streams.video[0]
+        for frame in container.decode(video_stream):
+            images.append(rr.Image(frame.to_ndarray(format="rgb24")).compress(jpeg_quality=86))
+    if not images:
+        raise ValueError(f"Logo video has no readable frames: {logo_video_path}")
+    return images
+
+
+def logo_video_frame_index(frame: int, frame_count: int) -> int:
+    return (frame + LOGO_VIDEO_FRAME_OFFSET) % frame_count
+
+
+def log_recording(data: FakeBackendData, logo_video_path: Path, out_dir: Path, seed: int) -> dict[str, Any]:
     import rerun as rr
 
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -172,14 +232,21 @@ def log_recording(data: FakeBackendData, icon_path: Path, out_dir: Path, seed: i
         return rr.Image(np.asarray(image.convert("RGB"))).compress(jpeg_quality=88)
 
     chart_series = {
-        "/screen2/charts/velocity_xyz/vx": ("vx", [85, 190, 255], (-0.65, 0.65)),
-        "/screen2/charts/velocity_xyz/vy": ("vy", [76, 214, 141], (-0.65, 0.65)),
-        "/screen2/charts/velocity_xyz/vz": ("vz", [255, 204, 92], (-0.65, 0.65)),
-        "/screen2/charts/angular_velocity_xyz/wx": ("wx", [85, 190, 255], (-0.08, 0.08)),
-        "/screen2/charts/angular_velocity_xyz/wy": ("wy", [76, 214, 141], (-0.08, 0.08)),
-        "/screen2/charts/angular_velocity_xyz/wz": ("wz", [255, 204, 92], (-0.08, 0.08)),
+        "/screen2/charts/velocity_xyz/vx": ("vx", TELEMETRY_BLUE, (-0.65, 0.65)),
+        "/screen2/charts/velocity_xyz/vy": ("vy", TELEMETRY_GREEN, (-0.65, 0.65)),
+        "/screen2/charts/velocity_xyz/vz": ("vz", TELEMETRY_YELLOW, (-0.65, 0.65)),
+        "/screen2/charts/angular_velocity_xyz/wx": ("wx", TELEMETRY_BLUE, (-0.08, 0.08)),
+        "/screen2/charts/angular_velocity_xyz/wy": ("wy", TELEMETRY_GREEN, (-0.08, 0.08)),
+        "/screen2/charts/angular_velocity_xyz/wz": ("wz", TELEMETRY_YELLOW, (-0.08, 0.08)),
     }
     position_xy = data.position_xyz[:, :2].astype(np.float32)
+    position_x_range, position_y_range = position_xy_visual_bounds(position_xy)
+    grid_lines = position_xy_grid_lines(position_x_range, position_y_range)
+    axes_lines = [
+        [[position_x_range[0], 0.0], [position_x_range[1], 0.0]],
+        [[0.0, position_y_range[0]], [0.0, position_y_range[1]]],
+    ]
+    logo_frames = logo_video_frames(logo_video_path, rr)
 
     with rr.RecordingStream(APP_ID, recording_id=RECORDING_ID) as rec:
         rec.save(recording_path)
@@ -191,20 +258,33 @@ def log_recording(data: FakeBackendData, icon_path: Path, out_dir: Path, seed: i
             rec.log("/screen2/deck_indicator", rgb_image(deck_indicator("ready" if frame else "check", frame)))
 
         rec.set_time("frame", sequence=0)
-        logo = Image.open(icon_path)
-        rec.log("/screen2/delta_logo", rr.Image(np.asarray(logo.convert("RGBA"))))
 
         for path, (name, color, _) in chart_series.items():
             rec.log(path, rr.SeriesLines(names=name, colors=color, widths=2.0), static=True)
 
         rec.log(
-            "/screen2/position_xy/trajectory",
-            rr.LineStrips2D([position_xy], colors=[85, 190, 255], radii=0.01, draw_order=10.0),
+            "/screen2/position_xy/grid",
+            rr.LineStrips2D(
+                grid_lines,
+                colors=[rgba([222, 226, 232], 96) for _ in grid_lines],
+                radii=0.003,
+                draw_order=0.0,
+            ),
+            static=True,
+        )
+        rec.log(
+            "/screen2/position_xy/axes",
+            rr.LineStrips2D(
+                axes_lines,
+                colors=[rgba(TELEMETRY_BLUE, 128), rgba(TELEMETRY_GREEN, 128)],
+                radii=0.006,
+                draw_order=2.0,
+            ),
             static=True,
         )
         rec.log(
             "/screen2/position_xy/origin",
-            rr.Points2D([[0.0, 0.0]], colors=[229, 233, 238], radii=0.03, draw_order=20.0),
+            rr.Points2D([[0.0, 0.0]], colors=[rgba([24, 32, 42], 220)], radii=0.035, draw_order=20.0),
             static=True,
         )
 
@@ -220,16 +300,45 @@ def log_recording(data: FakeBackendData, icon_path: Path, out_dir: Path, seed: i
                 rec.log(f"/screen2/charts/velocity_xyz/{axis}", rr.Scalars(float(value)))
             for axis, value in zip(["wx", "wy", "wz"], angular, strict=True):
                 rec.log(f"/screen2/charts/angular_velocity_xyz/{axis}", rr.Scalars(float(value)))
+            trajectory_strips, trajectory_colors = position_xy_faded_segments(position_xy, int(frame))
+            if trajectory_strips:
+                rec.log(
+                    "/screen2/position_xy/trajectory",
+                    rr.LineStrips2D(
+                        trajectory_strips,
+                        colors=trajectory_colors,
+                        radii=0.012,
+                        draw_order=10.0,
+                    ),
+                )
             rec.log(
                 "/screen2/position_xy/current",
-                rr.Points2D([position[:2].astype(np.float32)], colors=[255, 204, 92], radii=0.055, draw_order=30.0),
+                rr.Points2D(
+                    [position[:2].astype(np.float32)],
+                    colors=[rgba(TELEMETRY_YELLOW, 255)],
+                    radii=0.055,
+                    draw_order=30.0,
+                ),
             )
+            rec.log("/screen2/delta_logo", logo_frames[logo_video_frame_index(int(frame), len(logo_frames))])
 
     return {
         "recording": str(recording_path),
         "recording_id": RECORDING_ID,
         "representative_frame": representative_frame,
         "frame_count": len(data.frames),
+        "logo_video": {
+            "source": str(logo_video_path),
+            "rendering": "MP4 decoded at generation time into a Rerun Image sequence on /screen2/delta_logo starting from a visible source-frame offset",
+            "source_frame_count": len(logo_frames),
+            "source_frame_offset": LOGO_VIDEO_FRAME_OFFSET,
+            "looped_by_frame_index": len(data.frames) > len(logo_frames),
+            "compatibility_reason": "The current deployed web-viewer browser path lacks WebCodecs VideoDecoder, so native AssetVideo does not render there.",
+        },
+        "position_xy": {
+            "trajectory_alpha_floor": POSITION_TRAJECTORY_ALPHA_FLOOR,
+            "trajectory_fade_window_frames": POSITION_TRAJECTORY_FADE_WINDOW_FRAMES,
+        },
         "entities": [
             "/screen1/cam0",
             "/screen1/cam1",
@@ -239,6 +348,8 @@ def log_recording(data: FakeBackendData, icon_path: Path, out_dir: Path, seed: i
             "/screen2/charts/angular_velocity_xyz/wx",
             "/screen2/charts/angular_velocity_xyz/wy",
             "/screen2/charts/angular_velocity_xyz/wz",
+            "/screen2/position_xy/grid",
+            "/screen2/position_xy/axes",
             "/screen2/position_xy/trajectory",
             "/screen2/position_xy/origin",
             "/screen2/position_xy/current",
@@ -321,9 +432,10 @@ def make_screen2_blueprint(path: Path, data: FakeBackendData) -> None:
     time_range = frame_time_range(frame_count)
     time_axis = frame_time_axis(frame_count)
     image_bounds = rrb.VisualBounds2D(x_range=[0, 900], y_range=[0, 720])
-    logo_bounds = rrb.VisualBounds2D(x_range=[0, 512], y_range=[0, 512])
+    logo_bounds = rrb.VisualBounds2D(x_range=[0, LOGO_VIDEO_WIDTH], y_range=[0, LOGO_VIDEO_HEIGHT])
     position_x_range, position_y_range = position_xy_visual_bounds(data.position_xyz[:, :2])
     position_bounds = rrb.VisualBounds2D(x_range=position_x_range, y_range=position_y_range)
+    plot_background = rrb.archetypes.PlotBackground(color=LIGHT_BACKGROUND, show_grid=True)
     rrb.Blueprint(
         rrb.Horizontal(
             rrb.Vertical(
@@ -334,6 +446,7 @@ def make_screen2_blueprint(path: Path, data: FakeBackendData) -> None:
                     axis_x=time_axis,
                     plot_legend=rrb.PlotLegend(visible=True),
                     axis_y=rrb.ScalarAxis(range=(-0.65, 0.65)),
+                    background=plot_background,
                 ),
                 rrb.TimeSeriesView(
                     name="Angular velocity XYZ",
@@ -342,11 +455,12 @@ def make_screen2_blueprint(path: Path, data: FakeBackendData) -> None:
                     axis_x=time_axis,
                     plot_legend=rrb.PlotLegend(visible=True),
                     axis_y=rrb.ScalarAxis(range=(-0.08, 0.08)),
+                    background=plot_background,
                 ),
                 rrb.Spatial2DView(
                     name="Position XY",
                     origin="/screen2/position_xy",
-                    background=[10, 13, 17],
+                    background=LIGHT_BACKGROUND,
                     visual_bounds=position_bounds,
                     time_ranges=time_range,
                 ),
@@ -356,7 +470,7 @@ def make_screen2_blueprint(path: Path, data: FakeBackendData) -> None:
                 name="",
                 origin="/screen2/delta_logo",
                 contents=["/screen2/delta_logo"],
-                background=[244, 244, 240],
+                background=LIGHT_BACKGROUND,
                 visual_bounds=logo_bounds,
                 time_ranges=time_range,
             ),
@@ -364,7 +478,7 @@ def make_screen2_blueprint(path: Path, data: FakeBackendData) -> None:
                 name="DOHC DECK",
                 origin="/screen2/deck_indicator",
                 contents=["/screen2/deck_indicator"],
-                background=[8, 10, 12],
+                background=LIGHT_BACKGROUND,
                 visual_bounds=image_bounds,
                 time_ranges=time_range,
             ),
@@ -393,7 +507,7 @@ def write_blueprints(out_dir: Path, data: FakeBackendData) -> dict[str, str]:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
-    parser.add_argument("--icon", type=Path, default=DEFAULT_ICON)
+    parser.add_argument("--logo-video", type=Path, default=DEFAULT_LOGO_VIDEO)
     parser.add_argument("--summary-out", type=Path, default=DEFAULT_SUMMARY)
     parser.add_argument("--frame-count", type=int, default=360)
     parser.add_argument("--fps", type=float, default=30.0)
@@ -406,8 +520,8 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--frame-count must be at least 2")
     if not math.isfinite(args.fps) or args.fps <= 0:
         raise ValueError("--fps must be a positive finite number")
-    if not args.icon.is_file():
-        raise FileNotFoundError(args.icon)
+    if not args.logo_video.is_file():
+        raise FileNotFoundError(args.logo_video)
 
 
 def main() -> None:
@@ -415,7 +529,7 @@ def main() -> None:
     validate_args(args)
 
     data = generate_backend_data(args.frame_count, args.fps)
-    recording = log_recording(data, args.icon, args.out, args.seed)
+    recording = log_recording(data, args.logo_video, args.out, args.seed)
     blueprints = write_blueprints(args.out, data)
 
     summary = {
@@ -430,8 +544,9 @@ def main() -> None:
             "replace_with_real_inputs": [
                 "cam0 and cam1 encoded image bytes or RGB arrays",
                 "deck status image or state sequence for /screen2/deck_indicator",
+                "logo MP4 path or bytes decoded into the /screen2/delta_logo image sequence",
                 "pose samples containing frame, position_xyz or position_xy, velocity_xyz, and euler_rpy",
-                "XY pose samples drive /screen2/position_xy/trajectory and /screen2/position_xy/current",
+                "XY pose samples drive the faded /screen2/position_xy/trajectory and /screen2/position_xy/current",
                 "optional T265 image bytes for /screen2/t265",
             ],
             "layout_contract": "The two .rbl files depend on the entity paths above, not on wrapper HTML.",
