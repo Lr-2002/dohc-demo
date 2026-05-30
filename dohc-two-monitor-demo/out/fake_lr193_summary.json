@@ -17,8 +17,9 @@
       "/screen2/charts/angular_velocity_xyz/wx",
       "/screen2/charts/angular_velocity_xyz/wy",
       "/screen2/charts/angular_velocity_xyz/wz",
-      "/screen2/charts/position_xy/x",
-      "/screen2/charts/position_xy/y",
+      "/screen2/position_xy/trajectory",
+      "/screen2/position_xy/origin",
+      "/screen2/position_xy/current",
       "/screen2/deck_indicator",
       "/screen2/delta_logo",
       "/screen2/t265"
@@ -38,8 +39,9 @@
       "/screen2/charts/angular_velocity_xyz/wx",
       "/screen2/charts/angular_velocity_xyz/wy",
       "/screen2/charts/angular_velocity_xyz/wz",
-      "/screen2/charts/position_xy/x",
-      "/screen2/charts/position_xy/y",
+      "/screen2/position_xy/trajectory",
+      "/screen2/position_xy/origin",
+      "/screen2/position_xy/current",
       "/screen2/deck_indicator",
       "/screen2/delta_logo",
       "/screen2/t265"
@@ -47,7 +49,8 @@
     "replace_with_real_inputs": [
       "cam0 and cam1 encoded image bytes or RGB arrays",
       "deck status image or state sequence for /screen2/deck_indicator",
-      "pose samples containing frame, position_xyz, velocity_xyz, and euler_rpy",
+      "pose samples containing frame, position_xyz or position_xy, velocity_xyz, and euler_rpy",
+      "XY pose samples drive /screen2/position_xy/trajectory and /screen2/position_xy/current",
       "optional T265 image bytes for /screen2/t265"
     ],
     "layout_contract": "The two .rbl files depend on the entity paths above, not on wrapper HTML."

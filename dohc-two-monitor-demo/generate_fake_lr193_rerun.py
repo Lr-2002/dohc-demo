@@ -123,7 +123,7 @@ def deck_indicator(state: str, frame: int, width: int = 900, height: int = 720) 
         )
 
     draw.rounded_rectangle((80, 80, width - 80, height - 80), radius=18, outline=accent, width=6)
-    title = "DOHE DECK"
+    title = "DOHC DECK"
     subtitle = "READY" if ready else "INTERLOCK CHECK"
     tw, th = text_size(draw, title, font)
     sw, _ = text_size(draw, subtitle, font)
@@ -178,9 +178,8 @@ def log_recording(data: FakeBackendData, icon_path: Path, out_dir: Path, seed: i
         "/screen2/charts/angular_velocity_xyz/wx": ("wx", [85, 190, 255], (-0.08, 0.08)),
         "/screen2/charts/angular_velocity_xyz/wy": ("wy", [76, 214, 141], (-0.08, 0.08)),
         "/screen2/charts/angular_velocity_xyz/wz": ("wz", [255, 204, 92], (-0.08, 0.08)),
-        "/screen2/charts/position_xy/x": ("x", [85, 190, 255], (-2.5, 2.5)),
-        "/screen2/charts/position_xy/y": ("y", [76, 214, 141], (-2.5, 2.5)),
     }
+    position_xy = data.position_xyz[:, :2].astype(np.float32)
 
     with rr.RecordingStream(APP_ID, recording_id=RECORDING_ID) as rec:
         rec.save(recording_path)
@@ -198,6 +197,17 @@ def log_recording(data: FakeBackendData, icon_path: Path, out_dir: Path, seed: i
         for path, (name, color, _) in chart_series.items():
             rec.log(path, rr.SeriesLines(names=name, colors=color, widths=2.0), static=True)
 
+        rec.log(
+            "/screen2/position_xy/trajectory",
+            rr.LineStrips2D([position_xy], colors=[85, 190, 255], radii=0.01, draw_order=10.0),
+            static=True,
+        )
+        rec.log(
+            "/screen2/position_xy/origin",
+            rr.Points2D([[0.0, 0.0]], colors=[229, 233, 238], radii=0.03, draw_order=20.0),
+            static=True,
+        )
+
         for frame, velocity, angular, position in zip(
             data.frames,
             data.velocity_xyz,
@@ -210,8 +220,10 @@ def log_recording(data: FakeBackendData, icon_path: Path, out_dir: Path, seed: i
                 rec.log(f"/screen2/charts/velocity_xyz/{axis}", rr.Scalars(float(value)))
             for axis, value in zip(["wx", "wy", "wz"], angular, strict=True):
                 rec.log(f"/screen2/charts/angular_velocity_xyz/{axis}", rr.Scalars(float(value)))
-            for axis, value in zip(["x", "y"], position[:2], strict=True):
-                rec.log(f"/screen2/charts/position_xy/{axis}", rr.Scalars(float(value)))
+            rec.log(
+                "/screen2/position_xy/current",
+                rr.Points2D([position[:2].astype(np.float32)], colors=[255, 204, 92], radii=0.055, draw_order=30.0),
+            )
 
     return {
         "recording": str(recording_path),
@@ -227,8 +239,9 @@ def log_recording(data: FakeBackendData, icon_path: Path, out_dir: Path, seed: i
             "/screen2/charts/angular_velocity_xyz/wx",
             "/screen2/charts/angular_velocity_xyz/wy",
             "/screen2/charts/angular_velocity_xyz/wz",
-            "/screen2/charts/position_xy/x",
-            "/screen2/charts/position_xy/y",
+            "/screen2/position_xy/trajectory",
+            "/screen2/position_xy/origin",
+            "/screen2/position_xy/current",
             "/screen2/deck_indicator",
             "/screen2/delta_logo",
             "/screen2/t265",
@@ -256,6 +269,17 @@ def frame_time_axis(frame_count: int):
         ),
         zoom_lock=True,
     )
+
+
+def position_xy_visual_bounds(position_xy: np.ndarray) -> tuple[list[float], list[float]]:
+    minimum = np.min(position_xy, axis=0)
+    maximum = np.max(position_xy, axis=0)
+    span = np.maximum(maximum - minimum, 0.5)
+    padding = span * 0.25 + 0.1
+
+    x_range = [float(minimum[0] - padding[0]), float(maximum[0] + padding[0])]
+    y_range = [float(minimum[1] - padding[1]), float(maximum[1] + padding[1])]
+    return x_range, y_range
 
 
 def make_screen1_blueprint(path: Path, frame_count: int) -> None:
@@ -290,13 +314,16 @@ def make_screen1_blueprint(path: Path, frame_count: int) -> None:
     ).save(APP_ID, path)
 
 
-def make_screen2_blueprint(path: Path, frame_count: int) -> None:
+def make_screen2_blueprint(path: Path, data: FakeBackendData) -> None:
     import rerun.blueprint as rrb
 
+    frame_count = len(data.frames)
     time_range = frame_time_range(frame_count)
     time_axis = frame_time_axis(frame_count)
     image_bounds = rrb.VisualBounds2D(x_range=[0, 900], y_range=[0, 720])
     logo_bounds = rrb.VisualBounds2D(x_range=[0, 512], y_range=[0, 512])
+    position_x_range, position_y_range = position_xy_visual_bounds(data.position_xyz[:, :2])
+    position_bounds = rrb.VisualBounds2D(x_range=position_x_range, y_range=position_y_range)
     rrb.Blueprint(
         rrb.Horizontal(
             rrb.Vertical(
@@ -316,23 +343,14 @@ def make_screen2_blueprint(path: Path, frame_count: int) -> None:
                     plot_legend=rrb.PlotLegend(visible=True),
                     axis_y=rrb.ScalarAxis(range=(-0.08, 0.08)),
                 ),
-                rrb.TimeSeriesView(
+                rrb.Spatial2DView(
                     name="Position XY",
-                    origin="/screen2/charts/position_xy",
+                    origin="/screen2/position_xy",
+                    background=[10, 13, 17],
+                    visual_bounds=position_bounds,
                     time_ranges=time_range,
-                    axis_x=time_axis,
-                    plot_legend=rrb.PlotLegend(visible=True),
-                    axis_y=rrb.ScalarAxis(range=(-2.5, 2.5)),
                 ),
                 row_shares=[1, 1, 1],
-            ),
-            rrb.Spatial2DView(
-                name="DOHE DECK",
-                origin="/screen2/deck_indicator",
-                contents=["/screen2/deck_indicator"],
-                background=[8, 10, 12],
-                visual_bounds=image_bounds,
-                time_ranges=time_range,
             ),
             rrb.Spatial2DView(
                 name="",
@@ -342,7 +360,15 @@ def make_screen2_blueprint(path: Path, frame_count: int) -> None:
                 visual_bounds=logo_bounds,
                 time_ranges=time_range,
             ),
-            column_shares=[1.2, 1, 0.8],
+            rrb.Spatial2DView(
+                name="DOHC DECK",
+                origin="/screen2/deck_indicator",
+                contents=["/screen2/deck_indicator"],
+                background=[8, 10, 12],
+                visual_bounds=image_bounds,
+                time_ranges=time_range,
+            ),
+            column_shares=[1.2, 0.8, 1],
         ),
         rrb.TimePanel(state="hidden", timeline="frame", play_state="paused", fps=30.0),
         rrb.SelectionPanel(state="collapsed"),
@@ -351,13 +377,13 @@ def make_screen2_blueprint(path: Path, frame_count: int) -> None:
     ).save(APP_ID, path)
 
 
-def write_blueprints(out_dir: Path, frame_count: int) -> dict[str, str]:
+def write_blueprints(out_dir: Path, data: FakeBackendData) -> dict[str, str]:
     layouts = out_dir / "layouts"
     layouts.mkdir(parents=True, exist_ok=True)
     screen1 = layouts / SCREEN1_LAYOUT
     screen2 = layouts / SCREEN2_LAYOUT
-    make_screen1_blueprint(screen1, frame_count)
-    make_screen2_blueprint(screen2, frame_count)
+    make_screen1_blueprint(screen1, len(data.frames))
+    make_screen2_blueprint(screen2, data)
     return {
         "screen1_layout": str(screen1),
         "screen2_layout": str(screen2),
@@ -390,7 +416,7 @@ def main() -> None:
 
     data = generate_backend_data(args.frame_count, args.fps)
     recording = log_recording(data, args.icon, args.out, args.seed)
-    blueprints = write_blueprints(args.out, args.frame_count)
+    blueprints = write_blueprints(args.out, data)
 
     summary = {
         "contract": "LR-193-fake-backend-v1",
@@ -404,7 +430,8 @@ def main() -> None:
             "replace_with_real_inputs": [
                 "cam0 and cam1 encoded image bytes or RGB arrays",
                 "deck status image or state sequence for /screen2/deck_indicator",
-                "pose samples containing frame, position_xyz, velocity_xyz, and euler_rpy",
+                "pose samples containing frame, position_xyz or position_xy, velocity_xyz, and euler_rpy",
+                "XY pose samples drive /screen2/position_xy/trajectory and /screen2/position_xy/current",
                 "optional T265 image bytes for /screen2/t265",
             ],
             "layout_contract": "The two .rbl files depend on the entity paths above, not on wrapper HTML.",
