@@ -7,9 +7,9 @@ It does not ship or start the previous `delta_layout_entry_server.py` HTML wrapp
 
 - `out/default_lr193.rrd` is the generated Rerun recording.
 - `out/layouts/screen1.rbl` opens the two-camera screen.
-- `out/layouts/screen2.rbl` opens the telemetry, top-down Position XY, logo, and DOHC DECK screen.
+- `out/layouts/screen2.rbl` opens the light telemetry, top-down Position XY, MP4 logo, and DOHC DECK screen.
 - `out/fake_lr193_summary.json` records the fake backend contract and the real-data replacement boundary.
-- `assets/icon.png` is the user-provided logo source.
+- `assets/08e875350fba3add6ecebe0de7d26021.mp4` is the user-provided middle-logo video source.
 
 The only Rerun viewer branding change in this checkout is the top-left menu logo replacement in `crates/viewer/re_viewer/src/ui/rerun_menu.rs`.
 The logo asset is embedded from `crates/viewer/re_ui/data/icons/delta_logo.png`.
@@ -39,9 +39,11 @@ Using an unpatched `rerun-sdk` binary will open the same Rerun data, but it will
 Regenerate the fake backend recording and the two Rerun layouts with:
 
 ```bash
-pixi run uv run --with rerun-sdk==0.32.2 --with numpy --with pillow \
+pixi run uv run --with rerun-sdk==0.32.2 --with numpy --with pillow --with av \
   python dohc-two-monitor-demo/generate_fake_lr193_rerun.py
 ```
+
+The middle logo uses the provided MP4 as its source, but logs it as a Rerun `Image` sequence on `/screen2/delta_logo` for web-viewer compatibility and starts from a visible source-frame offset. Native `AssetVideo` was tested first and hit the deployed browser path's missing WebCodecs `VideoDecoder`.
 
 The generator writes the stable entity paths consumed by the two `.rbl` layouts:
 
@@ -53,6 +55,8 @@ The generator writes the stable entity paths consumed by the two `.rbl` layouts:
 - `/screen2/charts/angular_velocity_xyz/wx`
 - `/screen2/charts/angular_velocity_xyz/wy`
 - `/screen2/charts/angular_velocity_xyz/wz`
+- `/screen2/position_xy/grid`
+- `/screen2/position_xy/axes`
 - `/screen2/position_xy/trajectory`
 - `/screen2/position_xy/origin`
 - `/screen2/position_xy/current`
@@ -61,7 +65,7 @@ The generator writes the stable entity paths consumed by the two `.rbl` layouts:
 - `/screen2/t265`
 
 When real data arrives, replace the fake image and pose inputs inside `generate_fake_lr193_rerun.py` while preserving those entity paths and the two layout files.
-The XY samples feed the native 2D spatial trajectory and current-position entities instead of a time-series plot.
+The XY samples feed the native 2D spatial trajectory and current-position entities instead of a time-series plot; the trajectory is relogged over time with a 20% alpha floor.
 The native Rerun viewer deployment does not require a wrapper change for that swap.
 
 ## Remote asset serving
