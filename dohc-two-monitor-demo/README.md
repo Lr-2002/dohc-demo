@@ -56,8 +56,10 @@ The generator writes the stable entity paths consumed by the two `.rbl` layouts:
 - `/screen2/charts/angular_velocity_xyz/wy`
 - `/screen2/charts/angular_velocity_xyz/wz`
 - `/screen2/position_xy/grid`
+- `/screen2/position_xy/frame`
 - `/screen2/position_xy/axes`
 - `/screen2/position_xy/trajectory`
+- `/screen2/position_xy/head`
 - `/screen2/position_xy/origin`
 - `/screen2/position_xy/current`
 - `/screen2/deck_indicator`
@@ -65,7 +67,11 @@ The generator writes the stable entity paths consumed by the two `.rbl` layouts:
 - `/screen2/t265`
 
 When real data arrives, replace the fake image and pose inputs inside `generate_fake_lr193_rerun.py` while preserving those entity paths and the two layout files.
-The XY samples feed the native 2D spatial trajectory and current-position entities instead of a time-series plot; the trajectory is relogged over time with a 20% alpha floor.
+The XY samples feed the native 2D spatial trajectory and current-position entities instead of a time-series plot.
+For the file-URL fake delivery, Position XY is logged as a static age-faded final trajectory snapshot with a 20% alpha floor, avoiding native Spatial2D overdraw across the visible frame range.
+The Position XY view uses native `Spatial2D` visual bounds that are symmetric around zero and aspect-matched to the wide pane so the origin stays centered while the grid fills the pane.
+It renders a light-blue faded history plus a separate deep-blue current head.
+Rerun `LineStrips2D` stroke thickness is controlled by world-unit radii, so the trajectory radius is tuned to approximate the requested 6 px stroke under the generated bounds.
 The native Rerun viewer deployment does not require a wrapper change for that swap.
 
 ## Remote asset serving

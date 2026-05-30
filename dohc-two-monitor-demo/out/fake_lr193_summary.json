@@ -18,7 +18,24 @@
     },
     "position_xy": {
       "trajectory_alpha_floor": 0.2,
-      "trajectory_fade_window_frames": 120
+      "trajectory_fade_window_frames": 120,
+      "history_color": "#7DB7FF",
+      "head_and_current_color": "#0B3A8C",
+      "visual_bounds": {
+        "x_range": [
+          -1.7625000000000002,
+          1.7625000000000002
+        ],
+        "y_range": [
+          -0.75,
+          0.75
+        ],
+        "aspect": 2.35,
+        "origin": "centered by native Spatial2D visual bounds that are symmetric around zero on both axes"
+      },
+      "trajectory_radius_world_units": 0.014,
+      "line_width_note": "Rerun LineStrips2D radii are world-unit based; this radius is tuned to approximate a 6px stroke under the current centered bounds.",
+      "display_mode": "Static age-faded final trajectory snapshot, avoiding native Spatial2D overdraw across the visible frame range."
     },
     "entities": [
       "/screen1/cam0",
@@ -30,8 +47,10 @@
       "/screen2/charts/angular_velocity_xyz/wy",
       "/screen2/charts/angular_velocity_xyz/wz",
       "/screen2/position_xy/grid",
+      "/screen2/position_xy/frame",
       "/screen2/position_xy/axes",
       "/screen2/position_xy/trajectory",
+      "/screen2/position_xy/head",
       "/screen2/position_xy/origin",
       "/screen2/position_xy/current",
       "/screen2/deck_indicator",
@@ -54,8 +73,10 @@
       "/screen2/charts/angular_velocity_xyz/wy",
       "/screen2/charts/angular_velocity_xyz/wz",
       "/screen2/position_xy/grid",
+      "/screen2/position_xy/frame",
       "/screen2/position_xy/axes",
       "/screen2/position_xy/trajectory",
+      "/screen2/position_xy/head",
       "/screen2/position_xy/origin",
       "/screen2/position_xy/current",
       "/screen2/deck_indicator",
