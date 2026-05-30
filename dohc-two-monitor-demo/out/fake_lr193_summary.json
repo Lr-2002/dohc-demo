@@ -12,9 +12,24 @@
       "source": "dohc-two-monitor-demo/assets/08e875350fba3add6ecebe0de7d26021.mp4",
       "rendering": "MP4 decoded at generation time into a Rerun Image sequence on /screen2/delta_logo starting from a visible source-frame offset",
       "source_frame_count": 278,
+      "sampled_frame_count": 48,
+      "logged_frame_count": 46,
+      "logged_frame_stride": 8,
       "source_frame_offset": 80,
       "looped_by_frame_index": true,
-      "compatibility_reason": "The current deployed web-viewer browser path lacks WebCodecs VideoDecoder, so native AssetVideo does not render there."
+      "compatibility_reason": "The current deployed web-viewer browser path lacks WebCodecs VideoDecoder, so native AssetVideo does not render there.",
+      "load_compatibility": "The generated RRD logs a sampled MP4-derived image sequence instead of every source frame so the web viewer reaches telemetry and right-side panes promptly."
+    },
+    "screen2_right_images": {
+      "source_attachments": {
+        "dhoc_bottom_view": "019e77e0-4b9f-7dc7-ba19-6d2f49dee5ca",
+        "deck_side": "019e77e0-eda0-7b4d-a7f3-0737306082a9"
+      },
+      "local_assets": {
+        "dhoc_bottom_view": "dohc-two-monitor-demo/assets/screen2-right/dhoc_bottom_view.png",
+        "deck_side": "dohc-two-monitor-demo/assets/screen2-right/deck_side.png"
+      },
+      "rendering": "Transparent PNG assets are composited on black and logged as Rerun Image entities on the same representative frame samples as the other Screen 2 imagery."
     },
     "position_xy": {
       "trajectory_alpha_floor": 0.2,
@@ -53,7 +68,8 @@
       "/screen2/position_xy/head",
       "/screen2/position_xy/origin",
       "/screen2/position_xy/current",
-      "/screen2/deck_indicator",
+      "/screen2/right/dhoc_bottom_view",
+      "/screen2/right/deck_side",
       "/screen2/delta_logo",
       "/screen2/t265"
     ]
@@ -79,13 +95,14 @@
       "/screen2/position_xy/head",
       "/screen2/position_xy/origin",
       "/screen2/position_xy/current",
-      "/screen2/deck_indicator",
+      "/screen2/right/dhoc_bottom_view",
+      "/screen2/right/deck_side",
       "/screen2/delta_logo",
       "/screen2/t265"
     ],
     "replace_with_real_inputs": [
       "cam0 and cam1 encoded image bytes or RGB arrays",
-      "deck status image or state sequence for /screen2/deck_indicator",
+      "right-side dhoc bottom-view and deck side-view image assets",
       "logo MP4 path or bytes decoded into the /screen2/delta_logo image sequence",
       "pose samples containing frame, position_xyz or position_xy, velocity_xyz, and euler_rpy",
       "XY pose samples drive the faded /screen2/position_xy/trajectory and /screen2/position_xy/current",
