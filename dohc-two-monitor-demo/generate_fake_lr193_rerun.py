@@ -25,8 +25,21 @@ LIGHT_BACKGROUND = [255, 255, 255]
 TELEMETRY_BLUE = [85, 190, 255]
 TELEMETRY_GREEN = [76, 214, 141]
 TELEMETRY_YELLOW = [255, 204, 92]
+POSITION_HISTORY_BLUE = [125, 183, 255]
+POSITION_HEAD_BLUE = [11, 58, 140]
+POSITION_GRID_COLOR = [205, 215, 230]
+POSITION_AXIS_COLOR = [11, 58, 140]
 POSITION_TRAJECTORY_ALPHA_FLOOR = 0.2
 POSITION_TRAJECTORY_FADE_WINDOW_FRAMES = 120
+POSITION_TRAJECTORY_HEAD_SEGMENTS = 4
+POSITION_TRAJECTORY_RADIUS = 0.014
+POSITION_CURRENT_RADIUS = 0.065
+POSITION_GRID_LINE_COUNT = 11
+POSITION_GRID_RADIUS = 0.0035
+POSITION_AXIS_RADIUS = 0.008
+POSITION_VIEW_PADDING_FRACTION = 0.04
+POSITION_VIEW_MIN_Y_HALF_EXTENT = 0.75
+POSITION_VIEW_ASPECT = 2.35
 LOGO_VIDEO_WIDTH = 752
 LOGO_VIDEO_HEIGHT = 1280
 LOGO_VIDEO_FRAME_OFFSET = 80
@@ -174,9 +187,27 @@ def t265_image(frame: int, width: int = 960, height: int = 720) -> Image.Image:
 
 
 def position_xy_grid_lines(x_range: list[float], y_range: list[float]) -> list[list[list[float]]]:
-    verticals = [[[float(x), y_range[0]], [float(x), y_range[1]]] for x in np.linspace(x_range[0], x_range[1], 7)]
-    horizontals = [[[x_range[0], float(y)], [x_range[1], float(y)]] for y in np.linspace(y_range[0], y_range[1], 7)]
+    verticals = [
+        [[float(x), y_range[0]], [float(x), y_range[1]]]
+        for x in np.linspace(x_range[0], x_range[1], POSITION_GRID_LINE_COUNT)
+    ]
+    horizontals = [
+        [[x_range[0], float(y)], [x_range[1], float(y)]]
+        for y in np.linspace(y_range[0], y_range[1], POSITION_GRID_LINE_COUNT)
+    ]
     return verticals + horizontals
+
+
+def position_xy_frame_lines(x_range: list[float], y_range: list[float]) -> list[list[list[float]]]:
+    return [
+        [
+            [x_range[0], y_range[0]],
+            [x_range[1], y_range[0]],
+            [x_range[1], y_range[1]],
+            [x_range[0], y_range[1]],
+            [x_range[0], y_range[0]],
+        ]
+    ]
 
 
 def position_xy_faded_segments(
@@ -198,9 +229,24 @@ def position_xy_faded_segments(
             POSITION_TRAJECTORY_ALPHA_FLOOR,
             1.0 - (age / POSITION_TRAJECTORY_FADE_WINDOW_FRAMES),
         )
-        colors.append(rgba(TELEMETRY_BLUE, round(alpha_fraction * 255)))
+        colors.append(rgba(POSITION_HISTORY_BLUE, round(alpha_fraction * 255)))
 
     return strips, colors
+
+
+def position_xy_head_segments(position_xy: np.ndarray, current_index: int) -> list[list[list[float]]]:
+    segment_count = min(current_index, len(position_xy) - 1)
+    if segment_count <= 0:
+        return []
+
+    head_start = max(0, segment_count - POSITION_TRAJECTORY_HEAD_SEGMENTS)
+    return [
+        [
+            position_xy[segment_index].astype(float).tolist(),
+            position_xy[segment_index + 1].astype(float).tolist(),
+        ]
+        for segment_index in range(head_start, segment_count)
+    ]
 
 
 def logo_video_frames(logo_video_path: Path, rr: Any) -> list[Any]:
@@ -242,6 +288,7 @@ def log_recording(data: FakeBackendData, logo_video_path: Path, out_dir: Path, s
     position_xy = data.position_xyz[:, :2].astype(np.float32)
     position_x_range, position_y_range = position_xy_visual_bounds(position_xy)
     grid_lines = position_xy_grid_lines(position_x_range, position_y_range)
+    frame_lines = position_xy_frame_lines(position_x_range, position_y_range)
     axes_lines = [
         [[position_x_range[0], 0.0], [position_x_range[1], 0.0]],
         [[0.0, position_y_range[0]], [0.0, position_y_range[1]]],
@@ -266,9 +313,19 @@ def log_recording(data: FakeBackendData, logo_video_path: Path, out_dir: Path, s
             "/screen2/position_xy/grid",
             rr.LineStrips2D(
                 grid_lines,
-                colors=[rgba([222, 226, 232], 96) for _ in grid_lines],
-                radii=0.003,
+                colors=[rgba(POSITION_GRID_COLOR, 128) for _ in grid_lines],
+                radii=POSITION_GRID_RADIUS,
                 draw_order=0.0,
+            ),
+            static=True,
+        )
+        rec.log(
+            "/screen2/position_xy/frame",
+            rr.LineStrips2D(
+                frame_lines,
+                colors=[rgba(POSITION_GRID_COLOR, 176)],
+                radii=POSITION_GRID_RADIUS,
+                draw_order=1.0,
             ),
             static=True,
         )
@@ -276,23 +333,54 @@ def log_recording(data: FakeBackendData, logo_video_path: Path, out_dir: Path, s
             "/screen2/position_xy/axes",
             rr.LineStrips2D(
                 axes_lines,
-                colors=[rgba(TELEMETRY_BLUE, 128), rgba(TELEMETRY_GREEN, 128)],
-                radii=0.006,
+                colors=[rgba(POSITION_AXIS_COLOR, 160), rgba(POSITION_AXIS_COLOR, 160)],
+                radii=POSITION_AXIS_RADIUS,
                 draw_order=2.0,
             ),
             static=True,
         )
         rec.log(
             "/screen2/position_xy/origin",
-            rr.Points2D([[0.0, 0.0]], colors=[rgba([24, 32, 42], 220)], radii=0.035, draw_order=20.0),
+            rr.Points2D([[0.0, 0.0]], colors=[rgba(POSITION_HEAD_BLUE, 220)], radii=0.035, draw_order=20.0),
+            static=True,
+        )
+        trajectory_strips, trajectory_colors = position_xy_faded_segments(position_xy, final_frame)
+        rec.log(
+            "/screen2/position_xy/trajectory",
+            rr.LineStrips2D(
+                trajectory_strips,
+                colors=trajectory_colors,
+                radii=POSITION_TRAJECTORY_RADIUS,
+                draw_order=10.0,
+            ),
+            static=True,
+        )
+        head_strips = position_xy_head_segments(position_xy, final_frame)
+        rec.log(
+            "/screen2/position_xy/head",
+            rr.LineStrips2D(
+                head_strips,
+                colors=[rgba(POSITION_HEAD_BLUE, 255) for _ in head_strips],
+                radii=POSITION_TRAJECTORY_RADIUS,
+                draw_order=20.0,
+            ),
+            static=True,
+        )
+        rec.log(
+            "/screen2/position_xy/current",
+            rr.Points2D(
+                [position_xy[final_frame]],
+                colors=[rgba(POSITION_HEAD_BLUE, 255)],
+                radii=POSITION_CURRENT_RADIUS,
+                draw_order=30.0,
+            ),
             static=True,
         )
 
-        for frame, velocity, angular, position in zip(
+        for frame, velocity, angular in zip(
             data.frames,
             data.velocity_xyz,
             data.angular_velocity_xyz,
-            data.position_xyz,
             strict=True,
         ):
             rec.set_time("frame", sequence=int(frame))
@@ -300,26 +388,6 @@ def log_recording(data: FakeBackendData, logo_video_path: Path, out_dir: Path, s
                 rec.log(f"/screen2/charts/velocity_xyz/{axis}", rr.Scalars(float(value)))
             for axis, value in zip(["wx", "wy", "wz"], angular, strict=True):
                 rec.log(f"/screen2/charts/angular_velocity_xyz/{axis}", rr.Scalars(float(value)))
-            trajectory_strips, trajectory_colors = position_xy_faded_segments(position_xy, int(frame))
-            if trajectory_strips:
-                rec.log(
-                    "/screen2/position_xy/trajectory",
-                    rr.LineStrips2D(
-                        trajectory_strips,
-                        colors=trajectory_colors,
-                        radii=0.012,
-                        draw_order=10.0,
-                    ),
-                )
-            rec.log(
-                "/screen2/position_xy/current",
-                rr.Points2D(
-                    [position[:2].astype(np.float32)],
-                    colors=[rgba(TELEMETRY_YELLOW, 255)],
-                    radii=0.055,
-                    draw_order=30.0,
-                ),
-            )
             rec.log("/screen2/delta_logo", logo_frames[logo_video_frame_index(int(frame), len(logo_frames))])
 
     return {
@@ -338,6 +406,17 @@ def log_recording(data: FakeBackendData, logo_video_path: Path, out_dir: Path, s
         "position_xy": {
             "trajectory_alpha_floor": POSITION_TRAJECTORY_ALPHA_FLOOR,
             "trajectory_fade_window_frames": POSITION_TRAJECTORY_FADE_WINDOW_FRAMES,
+            "history_color": "#7DB7FF",
+            "head_and_current_color": "#0B3A8C",
+            "visual_bounds": {
+                "x_range": position_x_range,
+                "y_range": position_y_range,
+                "aspect": POSITION_VIEW_ASPECT,
+                "origin": "centered by native Spatial2D visual bounds that are symmetric around zero on both axes",
+            },
+            "trajectory_radius_world_units": POSITION_TRAJECTORY_RADIUS,
+            "line_width_note": "Rerun LineStrips2D radii are world-unit based; this radius is tuned to approximate a 6px stroke under the current centered bounds.",
+            "display_mode": "Static age-faded final trajectory snapshot, avoiding native Spatial2D overdraw across the visible frame range.",
         },
         "entities": [
             "/screen1/cam0",
@@ -349,8 +428,10 @@ def log_recording(data: FakeBackendData, logo_video_path: Path, out_dir: Path, s
             "/screen2/charts/angular_velocity_xyz/wy",
             "/screen2/charts/angular_velocity_xyz/wz",
             "/screen2/position_xy/grid",
+            "/screen2/position_xy/frame",
             "/screen2/position_xy/axes",
             "/screen2/position_xy/trajectory",
+            "/screen2/position_xy/head",
             "/screen2/position_xy/origin",
             "/screen2/position_xy/current",
             "/screen2/deck_indicator",
@@ -383,13 +464,16 @@ def frame_time_axis(frame_count: int):
 
 
 def position_xy_visual_bounds(position_xy: np.ndarray) -> tuple[list[float], list[float]]:
-    minimum = np.min(position_xy, axis=0)
-    maximum = np.max(position_xy, axis=0)
-    span = np.maximum(maximum - minimum, 0.5)
-    padding = span * 0.25 + 0.1
+    max_abs_x, max_abs_y = np.max(np.abs(position_xy), axis=0)
+    y_half_extent = max(
+        float(max_abs_y * (1.0 + POSITION_VIEW_PADDING_FRACTION)),
+        float(max_abs_x * (1.0 + POSITION_VIEW_PADDING_FRACTION) / POSITION_VIEW_ASPECT),
+        POSITION_VIEW_MIN_Y_HALF_EXTENT,
+    )
+    x_half_extent = y_half_extent * POSITION_VIEW_ASPECT
 
-    x_range = [float(minimum[0] - padding[0]), float(maximum[0] + padding[0])]
-    y_range = [float(minimum[1] - padding[1]), float(maximum[1] + padding[1])]
+    x_range = [-x_half_extent, x_half_extent]
+    y_range = [-y_half_extent, y_half_extent]
     return x_range, y_range
 
 
