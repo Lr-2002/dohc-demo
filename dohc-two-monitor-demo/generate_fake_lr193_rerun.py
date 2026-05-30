@@ -19,9 +19,12 @@ RECORDING = "default_lr193.rrd"
 SCREEN1_LAYOUT = "screen1.rbl"
 SCREEN2_LAYOUT = "screen2.rbl"
 DEFAULT_LOGO_VIDEO = Path("dohc-two-monitor-demo/assets/08e875350fba3add6ecebe0de7d26021.mp4")
+DEFAULT_DHOC_BOTTOM_VIEW = Path("dohc-two-monitor-demo/assets/screen2-right/dhoc_bottom_view.png")
+DEFAULT_DECK_SIDE = Path("dohc-two-monitor-demo/assets/screen2-right/deck_side.png")
 DEFAULT_OUT = Path("dohc-two-monitor-demo/out")
 DEFAULT_SUMMARY = DEFAULT_OUT / "fake_lr193_summary.json"
 LIGHT_BACKGROUND = [255, 255, 255]
+BLACK_BACKGROUND = [0, 0, 0]
 TELEMETRY_BLUE = [85, 190, 255]
 TELEMETRY_GREEN = [76, 214, 141]
 TELEMETRY_YELLOW = [255, 204, 92]
@@ -43,6 +46,9 @@ POSITION_VIEW_ASPECT = 2.35
 LOGO_VIDEO_WIDTH = 752
 LOGO_VIDEO_HEIGHT = 1280
 LOGO_VIDEO_FRAME_OFFSET = 80
+LOGO_VIDEO_MAX_LOGGED_FRAMES = 48
+RIGHT_ASSET_WIDTH = 1280
+RIGHT_ASSET_HEIGHT = 720
 
 
 @dataclass(frozen=True)
@@ -249,24 +255,45 @@ def position_xy_head_segments(position_xy: np.ndarray, current_index: int) -> li
     ]
 
 
-def logo_video_frames(logo_video_path: Path, rr: Any) -> list[Any]:
+def logo_video_frames(logo_video_path: Path, rr: Any) -> tuple[list[Any], int]:
     import av
 
     images = []
+    source_frame_count = 0
     with av.open(str(logo_video_path)) as container:
         video_stream = container.streams.video[0]
         for frame in container.decode(video_stream):
-            images.append(rr.Image(frame.to_ndarray(format="rgb24")).compress(jpeg_quality=86))
+            source_frame_count += 1
+            images.append(frame.to_ndarray(format="rgb24"))
     if not images:
         raise ValueError(f"Logo video has no readable frames: {logo_video_path}")
-    return images
+
+    if len(images) > LOGO_VIDEO_MAX_LOGGED_FRAMES:
+        sample_indexes = np.linspace(0, len(images) - 1, LOGO_VIDEO_MAX_LOGGED_FRAMES).round().astype(int)
+        images = [images[index] for index in sample_indexes]
+
+    return [rr.Image(image).compress(jpeg_quality=82) for image in images], source_frame_count
 
 
 def logo_video_frame_index(frame: int, frame_count: int) -> int:
     return (frame + LOGO_VIDEO_FRAME_OFFSET) % frame_count
 
 
-def log_recording(data: FakeBackendData, logo_video_path: Path, out_dir: Path, seed: int) -> dict[str, Any]:
+def transparent_asset_image(image_path: Path, rr: Any) -> Any:
+    image = Image.open(image_path).convert("RGBA")
+    background = Image.new("RGBA", image.size, (0, 0, 0, 255))
+    composited = Image.alpha_composite(background, image).convert("RGB")
+    return rr.Image(np.asarray(composited)).compress(jpeg_quality=92)
+
+
+def log_recording(
+    data: FakeBackendData,
+    logo_video_path: Path,
+    dhoc_bottom_view_path: Path,
+    deck_side_path: Path,
+    out_dir: Path,
+    seed: int,
+) -> dict[str, Any]:
     import rerun as rr
 
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -293,7 +320,11 @@ def log_recording(data: FakeBackendData, logo_video_path: Path, out_dir: Path, s
         [[position_x_range[0], 0.0], [position_x_range[1], 0.0]],
         [[0.0, position_y_range[0]], [0.0, position_y_range[1]]],
     ]
-    logo_frames = logo_video_frames(logo_video_path, rr)
+    logo_frames, logo_source_frame_count = logo_video_frames(logo_video_path, rr)
+    logo_log_stride = max(1, math.ceil(len(data.frames) / len(logo_frames)))
+    logo_logged_rows = 0
+    dhoc_bottom_view = transparent_asset_image(dhoc_bottom_view_path, rr)
+    deck_side = transparent_asset_image(deck_side_path, rr)
 
     with rr.RecordingStream(APP_ID, recording_id=RECORDING_ID) as rec:
         rec.save(recording_path)
@@ -302,7 +333,8 @@ def log_recording(data: FakeBackendData, logo_video_path: Path, out_dir: Path, s
             rec.log("/screen1/cam0", rgb_image(camera_image("cam0", frame, seed)))
             rec.log("/screen1/cam1", rgb_image(camera_image("cam1", frame, seed)))
             rec.log("/screen2/t265", rgb_image(t265_image(frame)))
-            rec.log("/screen2/deck_indicator", rgb_image(deck_indicator("ready" if frame else "check", frame)))
+            rec.log("/screen2/right/dhoc_bottom_view", dhoc_bottom_view)
+            rec.log("/screen2/right/deck_side", deck_side)
 
         rec.set_time("frame", sequence=0)
 
@@ -376,7 +408,6 @@ def log_recording(data: FakeBackendData, logo_video_path: Path, out_dir: Path, s
             ),
             static=True,
         )
-
         for frame, velocity, angular in zip(
             data.frames,
             data.velocity_xyz,
@@ -388,7 +419,11 @@ def log_recording(data: FakeBackendData, logo_video_path: Path, out_dir: Path, s
                 rec.log(f"/screen2/charts/velocity_xyz/{axis}", rr.Scalars(float(value)))
             for axis, value in zip(["wx", "wy", "wz"], angular, strict=True):
                 rec.log(f"/screen2/charts/angular_velocity_xyz/{axis}", rr.Scalars(float(value)))
-            rec.log("/screen2/delta_logo", logo_frames[logo_video_frame_index(int(frame), len(logo_frames))])
+            frame_int = int(frame)
+            if frame_int % logo_log_stride == 0 or frame_int == final_frame:
+                logo_index = (frame_int // logo_log_stride + LOGO_VIDEO_FRAME_OFFSET) % len(logo_frames)
+                rec.log("/screen2/delta_logo", logo_frames[logo_index])
+                logo_logged_rows += 1
 
     return {
         "recording": str(recording_path),
@@ -398,10 +433,25 @@ def log_recording(data: FakeBackendData, logo_video_path: Path, out_dir: Path, s
         "logo_video": {
             "source": str(logo_video_path),
             "rendering": "MP4 decoded at generation time into a Rerun Image sequence on /screen2/delta_logo starting from a visible source-frame offset",
-            "source_frame_count": len(logo_frames),
+            "source_frame_count": logo_source_frame_count,
+            "sampled_frame_count": len(logo_frames),
+            "logged_frame_count": logo_logged_rows,
+            "logged_frame_stride": logo_log_stride,
             "source_frame_offset": LOGO_VIDEO_FRAME_OFFSET,
             "looped_by_frame_index": len(data.frames) > len(logo_frames),
             "compatibility_reason": "The current deployed web-viewer browser path lacks WebCodecs VideoDecoder, so native AssetVideo does not render there.",
+            "load_compatibility": "The generated RRD logs a sampled MP4-derived image sequence instead of every source frame so the web viewer reaches telemetry and right-side panes promptly.",
+        },
+        "screen2_right_images": {
+            "source_attachments": {
+                "dhoc_bottom_view": "019e77e0-4b9f-7dc7-ba19-6d2f49dee5ca",
+                "deck_side": "019e77e0-eda0-7b4d-a7f3-0737306082a9",
+            },
+            "local_assets": {
+                "dhoc_bottom_view": str(dhoc_bottom_view_path),
+                "deck_side": str(deck_side_path),
+            },
+            "rendering": "Transparent PNG assets are composited on black and logged as Rerun Image entities on the same representative frame samples as the other Screen 2 imagery.",
         },
         "position_xy": {
             "trajectory_alpha_floor": POSITION_TRAJECTORY_ALPHA_FLOOR,
@@ -434,7 +484,8 @@ def log_recording(data: FakeBackendData, logo_video_path: Path, out_dir: Path, s
             "/screen2/position_xy/head",
             "/screen2/position_xy/origin",
             "/screen2/position_xy/current",
-            "/screen2/deck_indicator",
+            "/screen2/right/dhoc_bottom_view",
+            "/screen2/right/deck_side",
             "/screen2/delta_logo",
             "/screen2/t265",
         ],
@@ -515,7 +566,7 @@ def make_screen2_blueprint(path: Path, data: FakeBackendData) -> None:
     frame_count = len(data.frames)
     time_range = frame_time_range(frame_count)
     time_axis = frame_time_axis(frame_count)
-    image_bounds = rrb.VisualBounds2D(x_range=[0, 900], y_range=[0, 720])
+    right_image_bounds = rrb.VisualBounds2D(x_range=[0, RIGHT_ASSET_WIDTH], y_range=[0, RIGHT_ASSET_HEIGHT])
     logo_bounds = rrb.VisualBounds2D(x_range=[0, LOGO_VIDEO_WIDTH], y_range=[0, LOGO_VIDEO_HEIGHT])
     position_x_range, position_y_range = position_xy_visual_bounds(data.position_xyz[:, :2])
     position_bounds = rrb.VisualBounds2D(x_range=position_x_range, y_range=position_y_range)
@@ -558,13 +609,24 @@ def make_screen2_blueprint(path: Path, data: FakeBackendData) -> None:
                 visual_bounds=logo_bounds,
                 time_ranges=time_range,
             ),
-            rrb.Spatial2DView(
-                name="DOHC DECK",
-                origin="/screen2/deck_indicator",
-                contents=["/screen2/deck_indicator"],
-                background=LIGHT_BACKGROUND,
-                visual_bounds=image_bounds,
-                time_ranges=time_range,
+            rrb.Vertical(
+                rrb.Spatial2DView(
+                    name="dhoc 仰视图",
+                    origin="/screen2/right/dhoc_bottom_view",
+                    contents=["/screen2/right/dhoc_bottom_view"],
+                    background=BLACK_BACKGROUND,
+                    visual_bounds=right_image_bounds,
+                    time_ranges=time_range,
+                ),
+                rrb.Spatial2DView(
+                    name="deck 侧面",
+                    origin="/screen2/right/deck_side",
+                    contents=["/screen2/right/deck_side"],
+                    background=BLACK_BACKGROUND,
+                    visual_bounds=right_image_bounds,
+                    time_ranges=time_range,
+                ),
+                row_shares=[1, 1],
             ),
             column_shares=[1.2, 0.8, 1],
         ),
@@ -592,6 +654,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
     parser.add_argument("--logo-video", type=Path, default=DEFAULT_LOGO_VIDEO)
+    parser.add_argument("--dhoc-bottom-view", type=Path, default=DEFAULT_DHOC_BOTTOM_VIEW)
+    parser.add_argument("--deck-side", type=Path, default=DEFAULT_DECK_SIDE)
     parser.add_argument("--summary-out", type=Path, default=DEFAULT_SUMMARY)
     parser.add_argument("--frame-count", type=int, default=360)
     parser.add_argument("--fps", type=float, default=30.0)
@@ -606,6 +670,10 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--fps must be a positive finite number")
     if not args.logo_video.is_file():
         raise FileNotFoundError(args.logo_video)
+    if not args.dhoc_bottom_view.is_file():
+        raise FileNotFoundError(args.dhoc_bottom_view)
+    if not args.deck_side.is_file():
+        raise FileNotFoundError(args.deck_side)
 
 
 def main() -> None:
@@ -613,7 +681,7 @@ def main() -> None:
     validate_args(args)
 
     data = generate_backend_data(args.frame_count, args.fps)
-    recording = log_recording(data, args.logo_video, args.out, args.seed)
+    recording = log_recording(data, args.logo_video, args.dhoc_bottom_view, args.deck_side, args.out, args.seed)
     blueprints = write_blueprints(args.out, data)
 
     summary = {
@@ -627,7 +695,7 @@ def main() -> None:
             "keep_entity_paths": recording["entities"],
             "replace_with_real_inputs": [
                 "cam0 and cam1 encoded image bytes or RGB arrays",
-                "deck status image or state sequence for /screen2/deck_indicator",
+                "right-side dhoc bottom-view and deck side-view image assets",
                 "logo MP4 path or bytes decoded into the /screen2/delta_logo image sequence",
                 "pose samples containing frame, position_xyz or position_xy, velocity_xyz, and euler_rpy",
                 "XY pose samples drive the faded /screen2/position_xy/trajectory and /screen2/position_xy/current",
