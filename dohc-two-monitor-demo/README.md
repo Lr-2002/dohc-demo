@@ -77,6 +77,41 @@ It renders a light-blue faded history plus a separate deep-blue current head.
 Rerun `LineStrips2D` stroke thickness is controlled by world-unit radii, so the trajectory radius is tuned to approximate the requested 6 px stroke under the generated bounds.
 The native Rerun viewer deployment does not require a wrapper change for that swap.
 
+## H5 target-data wrapper
+
+`h5_target_data.py` is the first-stage H5 extraction boundary for real LR-193 data.
+It does not modify the viewer, layouts, online service, generated `.rrd`, or generated `.rbl` files.
+
+Inspect a readable H5 and print the four target streams:
+
+```bash
+python3 dohc-two-monitor-demo/h5_target_data.py inspect \
+  "/tmp/lr193_h5_probe/2026-05-29 10:05:30.h5"
+```
+
+Write quick extraction artifacts:
+
+```bash
+python3 dohc-two-monitor-demo/h5_target_data.py extract \
+  "/tmp/lr193_h5_probe/2026-05-29 10:05:30.h5" \
+  --out-dir /tmp/lr193_h5_target_extract \
+  --limit 24
+```
+
+The script writes `target_numeric.npz`, `target_data_summary.json`, and a few decoded `cam0` JPEG samples.
+It fail-fast probes the HDF5 magic header and `h5py.File` open path before inventory, so unreadable `/Users/w/Downloads/*.h5` files report the filesystem/HDF5 access failure instead of hanging.
+
+Target contract:
+
+- `cam0`: source `frame_*/cam0`, target `/screen1/cam0`, encoded as per-frame `uint8` JPEG bytes.
+- `XY`: source `frame_*/t265.attrs['pose'].position`, target `/screen2/position_xy/{trajectory,head,current}`, default plane `position[0:2]`.
+- `VXYZ`: source `frame_*/t265.attrs['pose'].velocity`, target `/screen2/charts/velocity_xyz/{vx,vy,vz}`.
+- `OmegaXYZ`: no direct H5 key in the verified schema, so it is derived from normalized `pose.quaternion` `[x,y,z,w]` frame deltas and reported in radians/second using `--fps`.
+  Unwrapped `pose.euler` finite differences are included as a cross-check and fallback if quaternion samples are unavailable.
+
+The next realtime RRD streamer should consume the wrapper output as one shared frame timeline: one backend frame tick logs `cam0`, `XY`, `VXYZ`, and `OmegaXYZ` to the existing entity paths so both Viewer URLs advance in sync.
+Right-side images remain static asset entities, while `/screen2/delta_logo` remains a dynamic image sequence.
+
 ## Remote asset serving
 
 The native viewer assets can be served with precompressed WASM support:
