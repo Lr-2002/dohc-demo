@@ -20,6 +20,16 @@ class GzipStaticHandler(http.server.SimpleHTTPRequestHandler):
         ".wasm": "application/wasm",
     }
 
+    def end_headers(self) -> None:
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Range")
+        super().end_headers()
+
+    def do_OPTIONS(self) -> None:
+        self.send_response(204)
+        self.end_headers()
+
     def send_head(self):
         if self.path_has_gzip_wasm():
             return self.send_gzip_wasm()

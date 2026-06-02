@@ -1,0 +1,162 @@
+{
+  "contract": "LR-237-browser-evidence-v1",
+  "captured_at_unix": 1780427401.3338702,
+  "chrome": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  "capture_mode": "cdp",
+  "status_url": "http://127.0.0.1:9930/status",
+  "shared_timeline_evidence": {
+    "status_url": "http://127.0.0.1:9930/status",
+    "viewer_source_urls": {
+      "screen2": [
+        "rerun+http://127.0.0.1:9920/proxy",
+        "http://127.0.0.1:9180/screen2.rbl"
+      ],
+      "screen1": [
+        "rerun+http://127.0.0.1:9920/proxy",
+        "http://127.0.0.1:9180/screen1.rbl"
+      ]
+    },
+    "primary_source_urls": {
+      "screen2": "rerun+http://127.0.0.1:9920/proxy",
+      "screen1": "rerun+http://127.0.0.1:9920/proxy"
+    },
+    "same_primary_source_url": true,
+    "shared_primary_source_url": "rerun+http://127.0.0.1:9920/proxy",
+    "all_samples_timeline_frame": true,
+    "all_screens_advanced_on_frame_timeline": true,
+    "sampled_frame_ranges": {
+      "screen2": [
+        280,
+        297
+      ],
+      "screen1": [
+        370,
+        386
+      ]
+    }
+  },
+  "screens": [
+    {
+      "name": "screen2",
+      "url": "http://127.0.0.1:9162?url=rerun%2Bhttp%3A%2F%2F127%2E0%2E0%2E1%3A9920%2Fproxy&url=http%3A%2F%2F127.0.0.1%3A9180%2Fscreen2.rbl&renderer=webgl&hide_welcome_screen",
+      "viewport": [
+        1280,
+        720
+      ],
+      "before": "/Users/w/multica_workspaces/c17f5a8b-330d-48d9-bd4c-834f6f04bc97/ca92310d/workdir/dohc-demo/dohc-two-monitor-demo/out/evidence/lr237-screen2-live-before.png",
+      "after": "/Users/w/multica_workspaces/c17f5a8b-330d-48d9-bd4c-834f6f04bc97/ca92310d/workdir/dohc-demo/dohc-two-monitor-demo/out/evidence/lr237-screen2-live-after.png",
+      "timeline_samples": {
+        "before": {
+          "fps": 2.0,
+          "frame": 280,
+          "sample_index": 40,
+          "source_frame": 40,
+          "status": "streaming",
+          "timeline": "frame",
+          "updated_at_unix": 1780427347.237807,
+          "sampled_at_unix": 1780427347.365354
+        },
+        "after": {
+          "fps": 2.0,
+          "frame": 297,
+          "sample_index": 57,
+          "source_frame": 57,
+          "status": "streaming",
+          "timeline": "frame",
+          "updated_at_unix": 1780427355.73573,
+          "sampled_at_unix": 1780427355.897218
+        },
+        "expected_visible_marker_path": "/screen2/frame_marker"
+      },
+      "timeline_evidence": {
+        "before_frame": 280,
+        "after_frame": 297,
+        "frame_delta": 17,
+        "before_timeline": "frame",
+        "after_timeline": "frame",
+        "same_timeline_name": true,
+        "advanced": true
+      },
+      "diff": {
+        "size": [
+          1280,
+          633
+        ],
+        "changed_pixels": 20934,
+        "changed_ratio": 0.025836789099526067,
+        "mean_abs_rgb": [
+          1.4511811315165877,
+          0.7582160841232227,
+          1.2272351402053712
+        ],
+        "bbox": [
+          0,
+          52,
+          748,
+          633
+        ]
+      }
+    },
+    {
+      "name": "screen1",
+      "url": "http://127.0.0.1:9161?url=rerun%2Bhttp%3A%2F%2F127%2E0%2E0%2E1%3A9920%2Fproxy&url=http%3A%2F%2F127.0.0.1%3A9180%2Fscreen1.rbl&renderer=webgl&hide_welcome_screen",
+      "viewport": [
+        1280,
+        720
+      ],
+      "before": "/Users/w/multica_workspaces/c17f5a8b-330d-48d9-bd4c-834f6f04bc97/ca92310d/workdir/dohc-demo/dohc-two-monitor-demo/out/evidence/lr237-screen1-live-before.png",
+      "after": "/Users/w/multica_workspaces/c17f5a8b-330d-48d9-bd4c-834f6f04bc97/ca92310d/workdir/dohc-demo/dohc-two-monitor-demo/out/evidence/lr237-screen1-live-after.png",
+      "timeline_samples": {
+        "before": {
+          "fps": 2.0,
+          "frame": 370,
+          "sample_index": 50,
+          "source_frame": 50,
+          "status": "streaming",
+          "timeline": "frame",
+          "updated_at_unix": 1780427392.244642,
+          "sampled_at_unix": 1780427392.2937229
+        },
+        "after": {
+          "fps": 2.0,
+          "frame": 386,
+          "sample_index": 66,
+          "source_frame": 66,
+          "status": "streaming",
+          "timeline": "frame",
+          "updated_at_unix": 1780427400.238056,
+          "sampled_at_unix": 1780427400.613169
+        },
+        "expected_visible_marker_path": "/screen1/frame_marker"
+      },
+      "timeline_evidence": {
+        "before_frame": 370,
+        "after_frame": 386,
+        "frame_delta": 16,
+        "before_timeline": "frame",
+        "after_timeline": "frame",
+        "same_timeline_name": true,
+        "advanced": true
+      },
+      "diff": {
+        "size": [
+          1280,
+          633
+        ],
+        "changed_pixels": 478393,
+        "changed_ratio": 0.590433698657188,
+        "mean_abs_rgb": [
+          9.850688684834124,
+          9.431241360584519,
+          9.588961295418642
+        ],
+        "bbox": [
+          39,
+          52,
+          1157,
+          633
+        ]
+      }
+    }
+  ]
+}

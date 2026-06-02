@@ -1,0 +1,82 @@
+{
+  "contract": "LR-193-h5-live-rerun-v1",
+  "transport": "live Rerun gRPC data service, not file-URL RRD playback",
+  "source_h5": "/tmp/lr237_h5_attachment/2026-05-29 10:05:30.h5",
+  "fps": 2.0,
+  "xy_plane": "xy",
+  "grpc": {
+    "port": 9920,
+    "local_source_url": "rerun+http://127.0.0.1:9920/proxy",
+    "browser_source_url": "rerun+http://127.0.0.1:9920/proxy",
+    "server_memory_limit": "64MiB",
+    "newest_first": true,
+    "cors_allow_origin": [
+      "http://127.0.0.1:9161",
+      "http://127.0.0.1:9162"
+    ],
+    "status_url": "http://127.0.0.1:9930/status"
+  },
+  "frames": {
+    "source_frame_count": 362,
+    "used_frame_count": 80,
+    "source_first_frame": 0,
+    "source_last_frame": 79,
+    "playback_timeline": "monotonic shared frame sequence; loops keep increasing the Rerun frame value"
+  },
+  "layouts": {
+    "screen1_layout": "dohc-two-monitor-demo/out/live/layouts/screen1.rbl",
+    "screen2_layout": "dohc-two-monitor-demo/out/live/layouts/screen2.rbl",
+    "play_state": "following",
+    "chart_window_frames": "20",
+    "velocity_axis_range": "(-0.5, 0.5)",
+    "omega_axis_range": "(-0.1, 0.1)",
+    "position_visual_bounds": "{'x_range': [-4.377640795707703, 4.377640795707703], 'y_range': [-1.862825870513916, 1.862825870513916]}",
+    "screen2_rendering": "native TimeSeriesView and Spatial2DView panes for charts, XY, logo, and right-side images"
+  },
+  "entity_paths": {
+    "cam0": [
+      "/screen1/cam0"
+    ],
+    "XY": [
+      "/screen2/position_xy/trajectory",
+      "/screen2/position_xy/head",
+      "/screen2/position_xy/current"
+    ],
+    "VXYZ": [
+      "/screen2/charts/velocity_xyz/vx",
+      "/screen2/charts/velocity_xyz/vy",
+      "/screen2/charts/velocity_xyz/vz"
+    ],
+    "OmegaXYZ": [
+      "/screen2/charts/angular_velocity_xyz/wx",
+      "/screen2/charts/angular_velocity_xyz/wy",
+      "/screen2/charts/angular_velocity_xyz/wz"
+    ],
+    "logo": [
+      "/screen2/delta_logo"
+    ],
+    "right_images": [
+      "/screen2/right/dhoc_bottom_view",
+      "/screen2/right/deck_side"
+    ],
+    "frame_markers": [
+      "/screen1/frame_marker",
+      "/screen2/frame_marker"
+    ]
+  },
+  "logo": {
+    "source": "dohc-two-monitor-demo/assets/08e875350fba3add6ecebe0de7d26021.mp4",
+    "rendering": "MP4 decoded to a dynamic Rerun Image sequence on /screen2/delta_logo",
+    "source_frame_count": 278,
+    "sampled_frame_count": 48
+  },
+  "right_images": {
+    "dhoc_bottom_view": "dohc-two-monitor-demo/assets/screen2-right/dhoc_bottom_view.png",
+    "deck_side": "dohc-two-monitor-demo/assets/screen2-right/deck_side.png",
+    "rendering": "same native Rerun Image archetypes repeated on the shared frame timeline so they remain visually static"
+  },
+  "omega_xyz": {
+    "source": "pose.quaternion",
+    "count": 80
+  }
+}
