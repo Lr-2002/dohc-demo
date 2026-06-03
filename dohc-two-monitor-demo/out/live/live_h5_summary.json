@@ -5,16 +5,16 @@
   "fps": 2.0,
   "xy_plane": "xy",
   "grpc": {
-    "port": 9920,
-    "local_source_url": "rerun+http://127.0.0.1:9920/proxy",
-    "browser_source_url": "rerun+http://127.0.0.1:9920/proxy",
+    "port": 9940,
+    "local_source_url": "rerun+http://127.0.0.1:9940/proxy",
+    "browser_source_url": "rerun+http://127.0.0.1:9940/proxy",
     "server_memory_limit": "64MiB",
     "newest_first": true,
     "cors_allow_origin": [
-      "http://127.0.0.1:9161",
-      "http://127.0.0.1:9162"
+      "http://127.0.0.1:9171",
+      "http://127.0.0.1:9172"
     ],
-    "status_url": "http://127.0.0.1:9930/status"
+    "status_url": "http://127.0.0.1:9950/status"
   },
   "frames": {
     "source_frame_count": 362,
@@ -71,8 +71,8 @@
     "sampled_frame_count": 48
   },
   "right_images": {
-    "dhoc_bottom_view": "dohc-two-monitor-demo/assets/screen2-right/dhoc_bottom_view.png",
-    "deck_side": "dohc-two-monitor-demo/assets/screen2-right/deck_side.png",
+    "dhoc_bottom_view": "dohc-two-monitor-demo/assets/screen2-right/img_v3_02128_1a548763-265b-4474-99ea-a7560f5f45ag.jpg",
+    "deck_side": "dohc-two-monitor-demo/assets/screen2-right/img_v3_02128_1fb583ef-cdbd-4f96-9294-30af1dad074g.jpg",
     "rendering": "same native Rerun Image archetypes repeated on the shared frame timeline so they remain visually static"
   },
   "omega_xyz": {

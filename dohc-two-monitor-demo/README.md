@@ -10,7 +10,7 @@ It does not ship or start the previous `delta_layout_entry_server.py` HTML wrapp
 - `out/layouts/screen2.rbl` opens the light telemetry, top-down Position XY, MP4 logo, and right-side dhoc/deck image panes.
 - `out/fake_lr193_summary.json` records the fake backend contract and the real-data replacement boundary.
 - `assets/08e875350fba3add6ecebe0de7d26021.mp4` is the user-provided middle-logo video source.
-- `assets/screen2-right/dhoc_bottom_view.png` and `assets/screen2-right/deck_side.png` are the user-provided Screen 2 right-pane images.
+- `assets/screen2-right/img_v3_02128_1a548763-265b-4474-99ea-a7560f5f45ag.jpg` and `assets/screen2-right/img_v3_02128_1fb583ef-cdbd-4f96-9294-30af1dad074g.jpg` are the current user-provided Screen 2 right-pane images.
 
 The only Rerun viewer branding change in this checkout is the top-left menu logo replacement in `crates/viewer/re_viewer/src/ui/rerun_menu.rs`.
 The logo asset is embedded from `crates/viewer/re_ui/data/icons/delta_logo.png`.
@@ -69,7 +69,7 @@ The generator writes the stable entity paths consumed by the two `.rbl` layouts:
 - `/screen2/t265`
 
 When real data arrives, replace the fake image and pose inputs inside `generate_fake_lr193_rerun.py` while preserving those entity paths and the two layout files.
-The right-side `dhoc 仰视图` and `deck 侧面` panes are static Rerun `Image` entities sourced from the downloaded Multica attachments and composited against black for contrast.
+The right-side panes are static Rerun `Image` entities sourced from the downloaded Multica attachments and fit into the existing 16:9 native image panes.
 The XY samples feed the native 2D spatial trajectory and current-position entities instead of a time-series plot.
 For the file-URL fake delivery, Position XY is logged as a static age-faded final trajectory snapshot with a 20% alpha floor, avoiding native Spatial2D overdraw across the visible frame range.
 The Position XY view uses native `Spatial2D` visual bounds that are symmetric around zero and aspect-matched to the wide pane so the origin stays centered while the grid fills the pane.

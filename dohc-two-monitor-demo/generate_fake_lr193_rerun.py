@@ -19,8 +19,12 @@ RECORDING = "default_lr193.rrd"
 SCREEN1_LAYOUT = "screen1.rbl"
 SCREEN2_LAYOUT = "screen2.rbl"
 DEFAULT_LOGO_VIDEO = Path("dohc-two-monitor-demo/assets/08e875350fba3add6ecebe0de7d26021.mp4")
-DEFAULT_DHOC_BOTTOM_VIEW = Path("dohc-two-monitor-demo/assets/screen2-right/dhoc_bottom_view.png")
-DEFAULT_DECK_SIDE = Path("dohc-two-monitor-demo/assets/screen2-right/deck_side.png")
+DEFAULT_DHOC_BOTTOM_VIEW = Path(
+    "dohc-two-monitor-demo/assets/screen2-right/img_v3_02128_1a548763-265b-4474-99ea-a7560f5f45ag.jpg"
+)
+DEFAULT_DECK_SIDE = Path(
+    "dohc-two-monitor-demo/assets/screen2-right/img_v3_02128_1fb583ef-cdbd-4f96-9294-30af1dad074g.jpg"
+)
 DEFAULT_OUT = Path("dohc-two-monitor-demo/out")
 DEFAULT_SUMMARY = DEFAULT_OUT / "fake_lr193_summary.json"
 LIGHT_BACKGROUND = [255, 255, 255]

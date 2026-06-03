@@ -1,8 +1,8 @@
 {
   "contract": "LR-237-browser-evidence-v1",
-  "captured_at_unix": 1780454459.298099,
+  "captured_at_unix": 1780454797.298663,
   "chrome": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-  "capture_mode": "cdp",
+  "capture_mode": "cdp-screencast",
   "status_url": "http://127.0.0.1:9950/status",
   "shared_timeline_evidence": {
     "status_url": "http://127.0.0.1:9950/status",
@@ -26,12 +26,12 @@
     "all_screens_advanced_on_frame_timeline": true,
     "sampled_frame_ranges": {
       "screen2": [
-        346,
-        359
+        1040,
+        1050
       ],
       "screen1": [
-        398,
-        410
+        1077,
+        1087
       ]
     }
   },
@@ -43,35 +43,36 @@
         1280,
         720
       ],
-      "before": "/Users/w/multica_workspaces/c17f5a8b-330d-48d9-bd4c-834f6f04bc97/47994a27/workdir/dohc-demo/dohc-two-monitor-demo/out/evidence/lr237-screen2-live-before.png",
-      "after": "/Users/w/multica_workspaces/c17f5a8b-330d-48d9-bd4c-834f6f04bc97/47994a27/workdir/dohc-demo/dohc-two-monitor-demo/out/evidence/lr237-screen2-live-after.png",
+      "capture_transport": "Page.startScreencast",
+      "before": "dohc-two-monitor-demo/out/evidence/imgswap-final/lr237-screen2-live-before.png",
+      "after": "dohc-two-monitor-demo/out/evidence/imgswap-final/lr237-screen2-live-after.png",
       "timeline_samples": {
         "before": {
           "fps": 2.0,
-          "frame": 346,
-          "sample_index": 26,
-          "source_frame": 26,
+          "frame": 1040,
+          "sample_index": 0,
+          "source_frame": 0,
           "status": "streaming",
           "timeline": "frame",
-          "updated_at_unix": 1780454426.196783,
-          "sampled_at_unix": 1780454426.307304
+          "updated_at_unix": 1780454773.1972039,
+          "sampled_at_unix": 1780454773.569698
         },
         "after": {
           "fps": 2.0,
-          "frame": 359,
-          "sample_index": 39,
-          "source_frame": 39,
+          "frame": 1050,
+          "sample_index": 10,
+          "source_frame": 10,
           "status": "streaming",
           "timeline": "frame",
-          "updated_at_unix": 1780454432.693887,
-          "sampled_at_unix": 1780454432.8438919
+          "updated_at_unix": 1780454778.1936,
+          "sampled_at_unix": 1780454778.669365
         },
         "expected_visible_marker_path": "/screen2/frame_marker"
       },
       "timeline_evidence": {
-        "before_frame": 346,
-        "after_frame": 359,
-        "frame_delta": 13,
+        "before_frame": 1040,
+        "after_frame": 1050,
+        "frame_delta": 10,
         "before_timeline": "frame",
         "after_timeline": "frame",
         "same_timeline_name": true,
@@ -82,16 +83,16 @@
           1280,
           633
         ],
-        "changed_pixels": 21275,
-        "changed_ratio": 0.026257652053712482,
+        "changed_pixels": 18701,
+        "changed_ratio": 0.023080815560821484,
         "mean_abs_rgb": [
-          1.5607350908372828,
-          0.8384651461295418,
-          1.2827791765402843
+          1.335303120063191,
+          0.6307057168246446,
+          1.0954803515007898
         ],
         "bbox": [
           0,
-          52,
+          90,
           748,
           633
         ]
@@ -104,35 +105,36 @@
         1280,
         720
       ],
-      "before": "/Users/w/multica_workspaces/c17f5a8b-330d-48d9-bd4c-834f6f04bc97/47994a27/workdir/dohc-demo/dohc-two-monitor-demo/out/evidence/lr237-screen1-live-before.png",
-      "after": "/Users/w/multica_workspaces/c17f5a8b-330d-48d9-bd4c-834f6f04bc97/47994a27/workdir/dohc-demo/dohc-two-monitor-demo/out/evidence/lr237-screen1-live-after.png",
+      "capture_transport": "Page.startScreencast",
+      "before": "dohc-two-monitor-demo/out/evidence/imgswap-final/lr237-screen1-live-before.png",
+      "after": "dohc-two-monitor-demo/out/evidence/imgswap-final/lr237-screen1-live-after.png",
       "timeline_samples": {
         "before": {
           "fps": 2.0,
-          "frame": 398,
-          "sample_index": 78,
-          "source_frame": 78,
+          "frame": 1077,
+          "sample_index": 37,
+          "source_frame": 37,
           "status": "streaming",
           "timeline": "frame",
-          "updated_at_unix": 1780454452.2001238,
-          "sampled_at_unix": 1780454452.340352
+          "updated_at_unix": 1780454791.692302,
+          "sampled_at_unix": 1780454791.852167
         },
         "after": {
           "fps": 2.0,
-          "frame": 410,
-          "sample_index": 10,
-          "source_frame": 10,
+          "frame": 1087,
+          "sample_index": 47,
+          "source_frame": 47,
           "status": "streaming",
           "timeline": "frame",
-          "updated_at_unix": 1780454458.196269,
-          "sampled_at_unix": 1780454458.654181
+          "updated_at_unix": 1780454796.6945899,
+          "sampled_at_unix": 1780454796.9416451
         },
         "expected_visible_marker_path": "/screen1/frame_marker"
       },
       "timeline_evidence": {
-        "before_frame": 398,
-        "after_frame": 410,
-        "frame_delta": 12,
+        "before_frame": 1077,
+        "after_frame": 1087,
+        "frame_delta": 10,
         "before_timeline": "frame",
         "after_timeline": "frame",
         "same_timeline_name": true,
@@ -143,19 +145,14 @@
           1280,
           633
         ],
-        "changed_pixels": 487523,
-        "changed_ratio": 0.601701964849921,
+        "changed_pixels": 0,
+        "changed_ratio": 0.0,
         "mean_abs_rgb": [
-          14.536269500394944,
-          14.837978870458135,
-          15.039283422195892
+          0.0,
+          0.0,
+          0.0
         ],
-        "bbox": [
-          34,
-          52,
-          1157,
-          633
-        ]
+        "bbox": null
       }
     }
   ]

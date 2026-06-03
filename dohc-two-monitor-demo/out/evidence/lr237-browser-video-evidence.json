@@ -1,0 +1,131 @@
+{
+  "captured_at_unix": 1780454718.676885,
+  "shared_timeline": {
+    "all_samples_timeline_frame": true,
+    "all_screens_advanced_on_frame_timeline": true,
+    "primary_source_urls": {
+      "screen1": "rerun+http://127.0.0.1:9940/proxy",
+      "screen2": "rerun+http://127.0.0.1:9940/proxy"
+    },
+    "same_primary_source_url": true,
+    "sampled_frame_ranges": {
+      "screen1": [
+        840,
+        864
+      ],
+      "screen2": [
+        906,
+        930
+      ]
+    },
+    "shared_primary_source_url": "rerun+http://127.0.0.1:9940/proxy",
+    "status_url": "http://127.0.0.1:9950/status",
+    "viewer_source_urls": {
+      "screen1": [
+        "rerun+http://127.0.0.1:9940/proxy",
+        "http://127.0.0.1:9190/screen1.rbl"
+      ],
+      "screen2": [
+        "rerun+http://127.0.0.1:9940/proxy",
+        "http://127.0.0.1:9190/screen2.rbl"
+      ]
+    }
+  },
+  "status_url": "http://127.0.0.1:9950/status",
+  "videos": [
+    {
+      "name": "screen1",
+      "recording": {
+        "captured_frame_count": 105,
+        "container": "mp4",
+        "duration_seconds": 12.0,
+        "encoded_fps": 8
+      },
+      "timeline_evidence": {
+        "advanced": true,
+        "after_frame": 864,
+        "after_timeline": "frame",
+        "before_frame": 840,
+        "before_timeline": "frame",
+        "frame_delta": 24,
+        "same_timeline_name": true
+      },
+      "timeline_samples": {
+        "after": {
+          "fps": 2.0,
+          "frame": 864,
+          "sample_index": 64,
+          "sampled_at_unix": 1780454685.399811,
+          "source_frame": 64,
+          "status": "streaming",
+          "timeline": "frame",
+          "updated_at_unix": 1780454685.200375
+        },
+        "before": {
+          "fps": 2.0,
+          "frame": 840,
+          "sample_index": 40,
+          "sampled_at_unix": 1780454673.330226,
+          "source_frame": 40,
+          "status": "streaming",
+          "timeline": "frame",
+          "updated_at_unix": 1780454673.199656
+        },
+        "expected_visible_marker_path": "/screen1/frame_marker"
+      },
+      "url": "http://127.0.0.1:9171?url=rerun%2Bhttp%3A%2F%2F127%2E0%2E0%2E1%3A9940%2Fproxy&url=http%3A%2F%2F127.0.0.1%3A9190%2Fscreen1.rbl&renderer=webgl&hide_welcome_screen",
+      "video": "dohc-two-monitor-demo/out/evidence/lr237-screen1-live-video.mp4",
+      "viewport": [
+        1280,
+        720
+      ]
+    },
+    {
+      "name": "screen2",
+      "recording": {
+        "captured_frame_count": 104,
+        "container": "mp4",
+        "duration_seconds": 12.0,
+        "encoded_fps": 8
+      },
+      "timeline_evidence": {
+        "advanced": true,
+        "after_frame": 930,
+        "after_timeline": "frame",
+        "before_frame": 906,
+        "before_timeline": "frame",
+        "frame_delta": 24,
+        "same_timeline_name": true
+      },
+      "timeline_samples": {
+        "after": {
+          "fps": 2.0,
+          "frame": 930,
+          "sample_index": 50,
+          "sampled_at_unix": 1780454718.5523221,
+          "source_frame": 50,
+          "status": "streaming",
+          "timeline": "frame",
+          "updated_at_unix": 1780454718.197453
+        },
+        "before": {
+          "fps": 2.0,
+          "frame": 906,
+          "sample_index": 26,
+          "sampled_at_unix": 1780454706.546251,
+          "source_frame": 26,
+          "status": "streaming",
+          "timeline": "frame",
+          "updated_at_unix": 1780454706.1958342
+        },
+        "expected_visible_marker_path": "/screen2/frame_marker"
+      },
+      "url": "http://127.0.0.1:9172?url=rerun%2Bhttp%3A%2F%2F127%2E0%2E0%2E1%3A9940%2Fproxy&url=http%3A%2F%2F127.0.0.1%3A9190%2Fscreen2.rbl&renderer=webgl&hide_welcome_screen",
+      "video": "dohc-two-monitor-demo/out/evidence/lr237-screen2-live-video.mp4",
+      "viewport": [
+        1280,
+        720
+      ]
+    }
+  ]
+}
